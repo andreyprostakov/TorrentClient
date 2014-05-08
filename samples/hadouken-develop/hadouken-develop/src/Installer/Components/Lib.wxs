@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Fragment>
+    <ComponentGroup Id="LibComponents" Directory="INSTALLDIR" Source="$(var.BinDir)\">
+      <Component>
+        <File Name="Autofac.dll" />
+      </Component>
+
+      <Component>
+        <File Name="Autofac.Integration.Wcf.dll" />
+      </Component>
+
+      <Component>
+        <File Name="Ionic.Zip.dll" />
+      </Component>
+
+      <Component>
+        <File Name="Microsoft.AspNet.SignalR.Core.dll" />
+      </Component>
+
+      <Component>
+        <File Name="Microsoft.Owin.dll" />
+      </Component>
+
+      <Component>
+        <File Name="Microsoft.Owin.Host.HttpListener.dll" />
+      </Component>
+
+      <Component>
+        <File Name="Microsoft.Owin.Hosting.dll" />
+      </Component>
+
+      <Component>
+        <File Name="Microsoft.Owin.Security.Cookies.dll" />
+      </Component>
+
+      <Component>
+        <File Name="Microsoft.Owin.Security.dll" />
+      </Component>
+      
+      <Component>
+        <File Name="Nancy.Bootstrappers.Autofac.dll" />
+      </Component>
+
+      <Component>
+        <File Name="Nancy.dll" />
+      </Component>
+
+      <Component>
+        <File Name="Nancy.MSOwinSecurity.dll" />
+      </Component>
+
+      <Component>
+        <File Name="Nancy.Owin.dll" />
+      </Component>
+
+      <Component>
+        <File Name="Nancy.ViewEngines.Razor.dll" />
+      </Component>
+
+      <Component>
+        <File Name="Newtonsoft.Json.dll" />
+      </Component>
+
+      <Component>
+        <File Name="NLog.dll" />
+      </Component>
+
+      <Component>
+        <File Name="Owin.dll" />
+      </Component>
+
+      <Component>
+        <File Name="System.Web.Razor.Unofficial.dll" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

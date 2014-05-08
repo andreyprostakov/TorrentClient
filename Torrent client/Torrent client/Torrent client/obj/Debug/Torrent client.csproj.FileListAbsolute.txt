@@ -1,0 +1,11 @@
+D:\Учеба\Курсовой проект\Torrent client\Torrent client\Torrent client\bin\Debug\Torrent client.exe.config
+D:\Учеба\Курсовой проект\Torrent client\Torrent client\Torrent client\bin\Debug\Torrent client.exe
+D:\Учеба\Курсовой проект\Torrent client\Torrent client\Torrent client\bin\Debug\Torrent client.pdb
+D:\Учеба\Курсовой проект\Torrent client\Torrent client\Torrent client\bin\Debug\OSS.NBEncode.dll
+D:\Учеба\Курсовой проект\Torrent client\Torrent client\Torrent client\bin\Debug\OSS.NBEncode.pdb
+D:\Учеба\Курсовой проект\Torrent client\Torrent client\Torrent client\obj\Debug\Torrent client.csprojResolveAssemblyReference.cache
+D:\Учеба\Курсовой проект\Torrent client\Torrent client\Torrent client\obj\Debug\Torrent_client.Form1.resources
+D:\Учеба\Курсовой проект\Torrent client\Torrent client\Torrent client\obj\Debug\Torrent_client.Properties.Resources.resources
+D:\Учеба\Курсовой проект\Torrent client\Torrent client\Torrent client\obj\Debug\Torrent client.csproj.GenerateResource.Cache
+D:\Учеба\Курсовой проект\Torrent client\Torrent client\Torrent client\obj\Debug\Torrent client.exe
+D:\Учеба\Курсовой проект\Torrent client\Torrent client\Torrent client\obj\Debug\Torrent client.pdb

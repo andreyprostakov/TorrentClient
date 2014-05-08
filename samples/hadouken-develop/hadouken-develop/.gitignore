@@ -1,0 +1,30 @@
+# Ignore CommonAssemblyInfo.cs
+src/CommonAssemblyInfo.cs
+
+_ReSharper.Hadouken/
+
+# Build output
+build/
+
+src/**/**/bin
+src/**/**/obj
+
+# User-specific files
+*.suo
+*.user
+*.sln.docstates
+*.ncrunchsolution
+
+*.pyc
+
+#Wix
+*.wxobj
+*.wixobj
+*.wixpdb
+
+#Config
+config/config.yml
+packages/
+src/**/**/**/obj
+src/**/**/**/bin
+docs/_build

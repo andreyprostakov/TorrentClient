@@ -1,0 +1,6 @@
+D:\Учеба\Курсовой проект\BDecoded\bin\Debug\BDecoded.dll
+D:\Учеба\Курсовой проект\BDecoded\bin\Debug\BDecoded.pdb
+D:\Учеба\Курсовой проект\BDecoded\obj\Debug\BDecoded.dll
+D:\Учеба\Курсовой проект\BDecoded\obj\Debug\BDecoded.pdb
+D:\Учеба\Курсовой проект\bin\BDecoded.dll
+D:\Учеба\Курсовой проект\bin\BDecoded.pdb

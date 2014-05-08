@@ -1,0 +1,4 @@
+D:\Учеба\Курсовой проект\nbencode\NBEncode-master\OSS.NBEncode\bin\Debug\OSS.NBEncode.dll
+D:\Учеба\Курсовой проект\nbencode\NBEncode-master\OSS.NBEncode\bin\Debug\OSS.NBEncode.pdb
+D:\Учеба\Курсовой проект\nbencode\NBEncode-master\OSS.NBEncode\obj\Debug\OSS.NBEncode.dll
+D:\Учеба\Курсовой проект\nbencode\NBEncode-master\OSS.NBEncode\obj\Debug\OSS.NBEncode.pdb

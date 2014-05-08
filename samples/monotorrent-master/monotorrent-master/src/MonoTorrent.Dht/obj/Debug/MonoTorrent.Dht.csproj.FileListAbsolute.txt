@@ -1,0 +1,5 @@
+C:\Users\Andrew\Downloads\monotorrent-master\monotorrent-master\build\MonoTorrent\Debug\MonoTorrent.Dht.dll
+C:\Users\Andrew\Downloads\monotorrent-master\monotorrent-master\build\MonoTorrent\Debug\MonoTorrent.Dht.pdb
+C:\Users\Andrew\Downloads\monotorrent-master\monotorrent-master\src\MonoTorrent.Dht\obj\Debug\MonoTorrent.Dht.csprojResolveAssemblyReference.cache
+C:\Users\Andrew\Downloads\monotorrent-master\monotorrent-master\src\MonoTorrent.Dht\obj\Debug\MonoTorrent.Dht.dll
+C:\Users\Andrew\Downloads\monotorrent-master\monotorrent-master\src\MonoTorrent.Dht\obj\Debug\MonoTorrent.Dht.pdb
