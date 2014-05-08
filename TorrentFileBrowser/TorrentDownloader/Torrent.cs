@@ -24,7 +24,7 @@ namespace TorrentDownloader
             get
             {
                 String info_content = Meta["info"].BEncode();
-                return SHA1.Create().ComputeHash(Encoding.UTF8.GetBytes(info_content));
+                return SHA1.Create().ComputeHash(Encoding.ASCII.GetBytes(info_content));
             }
         }
 
@@ -49,12 +49,6 @@ namespace TorrentDownloader
         
         public Torrent(String file_name)
         {
-            using (StreamReader sreader = new StreamReader(file_name, Encoding.ASCII))
-            {
-                String content = sreader.ReadToEnd();
-                int start_index = content.IndexOf("4:infod") + 6;
-                original_info = content.Substring(start_index);
-            }
             Stream reader = new FileStream(file_name, FileMode.Open);
             BDecoded.Decoder decoder = new BDecoded.Decoder();
             BDecoded.IBElement parsed_torrent_file = decoder.Decode(reader);
@@ -65,6 +59,11 @@ namespace TorrentDownloader
             Meta = meta_info;
             CollectAnnounces();
             CollectFiles((BDictionary)meta_info["info"]);
+
+            StreamReader stream_reader = new StreamReader(file_name, Encoding.ASCII);
+            String all_content = stream_reader.ReadToEnd();
+            original_info = new string(all_content.Skip(all_content.IndexOf("4:infod") + "4:infod".Length).ToArray());
+            stream_reader.Close();
             return;            
         }
 

@@ -20,10 +20,10 @@ namespace TorrentDownloader
         private Client Client { get; set; }
 
         public const long TORRENT_PROTOCOL_CODE = 0x41727101980;
-        public enum ACTIONS: int {Connect = 0, Announce = 1}
+        public enum ACTIONS: int {Connect = 0, Announce = 1, Scrape = 2, Error = 3}
         public enum EVENTS : int {None = 0, Completed = 1, Started = 2, Stopped = 3}
         protected String UDP_ADDRESS_PATTERN = @"udp://(.+):(\d{1,4})";
-        private const int TIMEOUT = 6000;
+        private const int TIMEOUT = 5000;
 
         public TrackerUdpProtocol(Client client)
         {
@@ -41,18 +41,27 @@ namespace TorrentDownloader
                 return false;
             }
             UdpClient udp_client = CreateClient(address);
+            if (udp_client == null) return false;
+
             byte[] connection_response = SendRequest(udp_client, ConnectionRequest());
             if (connection_response == null || !ProcessConnectionResponse(connection_response))
             {
                 LastError = "Wrong connection response from tracker";
                 return false;
             }
-            byte[] announce_response = SendRequest(udp_client, AnnounceRequest(torrent));
-            if (announce_response == null)
+
+            byte[] scrape_response = SendRequest(udp_client, ScrapeRequest(torrent));
+            if (scrape_response == null || !ProcessScrapeResponse(scrape_response))
             {
-                LastError = "Wrong announce response from tracker";
                 return false;
             }
+
+            byte[] announce_response = SendRequest(udp_client, AnnounceRequest(torrent));
+            if (announce_response == null || !ProcessAnnounceResponse(announce_response))
+            {
+                return false;
+            }
+
             udp_client.Close();
             return true;
         }
@@ -122,34 +131,12 @@ namespace TorrentDownloader
         {
             TransactionID = GenerateTransactionID();
             List<byte> message_content = new List<byte>();
-            message_content.AddRange(BitConverter.GetBytes(TORRENT_PROTOCOL_CODE).Reverse().ToArray());
-            message_content.AddRange(BitConverter.GetBytes((Int32)ACTIONS.Connect));
-            message_content.AddRange(BitConverter.GetBytes(TransactionID));
+            AppendMessage(message_content, (Int64)TORRENT_PROTOCOL_CODE);
+            AppendMessage(message_content, (Int32)ACTIONS.Connect);
+            AppendMessage(message_content, (Int32)TransactionID);
             if (message_content.Count != 16) throw new FormatException("Wrong udp request");
             return message_content.ToArray();
         }
-
-        protected byte[] AnnounceRequest(Torrent torrent)
-        {
-            TransactionID = GenerateTransactionID();
-            List<byte> message_content = new List<byte>();
-            message_content.AddRange(BitConverter.GetBytes((Int64)ConnectionID)); //8
-            message_content.AddRange(BitConverter.GetBytes((Int32)ACTIONS.Announce)); //4
-            message_content.AddRange(BitConverter.GetBytes((Int32)TransactionID)); //4
-            message_content.AddRange(torrent.InfoHash); // 20
-            message_content.AddRange(Client.Id); // 20
-            message_content.AddRange(BitConverter.GetBytes((Int64)0)); // downloaded
-            message_content.AddRange(BitConverter.GetBytes((Int64)0)); // left
-            message_content.AddRange(BitConverter.GetBytes((Int64)0)); // uploaded
-            message_content.AddRange(BitConverter.GetBytes((Int32)EVENTS.None)); // event
-            message_content.AddRange(BitConverter.GetBytes((Int32)0)); // IP (default)
-            message_content.AddRange(BitConverter.GetBytes((Int32)0)); // key ???
-            message_content.AddRange(BitConverter.GetBytes((Int32)(-1))); // num_want (default)
-            message_content.AddRange(BitConverter.GetBytes((Int16)0)); // port
-            if (message_content.Count != 98) throw new FormatException("Wrong udp request");
-            return message_content.ToArray();
-        }
-        
 
         /// <summary>
         /// Parse connection response and define connection id
@@ -157,10 +144,110 @@ namespace TorrentDownloader
         /// <returns>true if response is correct</returns>
         protected bool ProcessConnectionResponse(byte[] response)
         {
-            int action = BitConverter.ToInt32(response, 0);
-            int receiver_transaction_id = BitConverter.ToInt32(response, 4);
-            ConnectionID = BitConverter.ToInt64(response, 8);
-            return action == 0 && receiver_transaction_id == TransactionID;
+            int action = BitConvertInt32(response, 0);
+            int receiver_transaction_id = BitConvertInt32(response, 4);
+            ConnectionID = BitConvertInt64(response, 8);
+            return action == (int)ACTIONS.Connect && receiver_transaction_id == TransactionID;
+        }
+
+        /// <summary>
+        /// Torrent protocol message for getting peers list
+        /// </summary>
+        /// <returns>Message content</returns>
+        protected byte[] AnnounceRequest(Torrent torrent)
+        {
+            TransactionID = GenerateTransactionID();
+            List<byte> message_content = new List<byte>();
+            AppendMessage(message_content, (Int64)ConnectionID); //8
+            AppendMessage(message_content, (Int32)ACTIONS.Announce); //4
+            AppendMessage(message_content, (Int32)TransactionID); //4
+            byte[] hash = StringToByteArray("b3b3e49c01d855e1e101dd7ebb32fd31e15a5bee").Reverse().ToArray();
+            AppendMessage(message_content, hash); // 20
+            AppendMessage(message_content, Client.Id); // 20
+            AppendMessage(message_content, (Int64)0); // downloaded
+            AppendMessage(message_content, (Int64)0); // left
+            AppendMessage(message_content, (Int64)0); // uploaded
+            AppendMessage(message_content, (Int32)EVENTS.None); // event
+            AppendMessage(message_content, (Int32)0); // IP (default)
+            AppendMessage(message_content, (Int32)0); // key ???
+            AppendMessage(message_content, (Int32)(-1)); // num_want (default)
+            AppendMessage(message_content, (Int16)0); // port
+            if (message_content.Count != 98) throw new FormatException("Wrong udp request");
+            return message_content.ToArray();
+        }
+
+        /// <summary>
+        /// Parse announce response and define peers
+        /// </summary>
+        /// <returns>true if response is correct</returns>
+        protected bool ProcessAnnounceResponse(byte[] response)
+        {
+            int action = BitConvertInt32(response, 0);
+            if (action == (int)ACTIONS.Error)
+            {
+                String error_msg = Encoding.ASCII.GetString(response.Skip(8).ToArray());
+                LastError = error_msg;
+                return false;
+            }
+            int receiver_transaction_id = BitConvertInt32(response, 4);
+            int interval = BitConvertInt32(response, 8);
+            int leechers = BitConvertInt32(response, 12);
+            int seeders = BitConvertInt32(response, 16);
+
+            int addresses_count = (response.Length - 20) / 4;
+            String[] peers_addresses = new String[addresses_count];
+            for (int i = 0; i < addresses_count; i++)
+            {
+                int ip = BitConvertInt32(response, 20 + i*4);
+                int port = BitConvertInt16(response, 24 + i*4);
+                peers_addresses[i] = String.Format("{0}:{1}", BitConverter.ToString(BitConverter.GetBytes(ip)), port);
+            }
+            return action == (int)ACTIONS.Announce && receiver_transaction_id == TransactionID;
+        }
+        
+        private static byte[] StringToByteArray(string hex)
+        {
+            return Enumerable.Range(0, hex.Length)
+                             .Where(x => x % 2 == 0)
+                             .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
+                             .ToArray();
+        }
+
+        /// <summary>
+        /// Torrent protocol message for getting peers count
+        /// </summary>
+        /// <returns>Message content</returns>
+        protected byte[] ScrapeRequest(Torrent torrent)
+        {
+            TransactionID = GenerateTransactionID();
+            List<byte> message_content = new List<byte>();
+            AppendMessage(message_content, (Int64)ConnectionID); //8
+            AppendMessage(message_content, (Int32)ACTIONS.Scrape); //4
+            AppendMessage(message_content, (Int32)TransactionID); //4
+            byte[] hash = StringToByteArray("b3b3e49c01d855e1e101dd7ebb32fd31e15a5bee").Reverse().ToArray();
+            AppendMessage(message_content, hash); // 20
+            if (message_content.Count != 36) throw new FormatException("Wrong udp request");
+            return message_content.ToArray();
+        }
+        
+        /// <summary>
+        /// Parse scrape response and define peers count
+        /// </summary>
+        /// <returns>true if response is correct</returns>
+        protected bool ProcessScrapeResponse(byte[] response)
+        {
+            int action = BitConvertInt32(response, 0);
+            if (action == (int)ACTIONS.Error)
+            {
+                String error_msg = Encoding.ASCII.GetString(response.Skip(8).ToArray());
+                LastError = error_msg;
+                return false;
+            }
+            int receiver_transaction_id = BitConvertInt32(response, 4);
+            int complete_peers = BitConvertInt32(response, 8);
+            int downloaded_peers = BitConvertInt32(response, 12);
+            int incomplete_peers = BitConvertInt32(response, 16);
+            return action == (int)ACTIONS.Scrape && receiver_transaction_id == TransactionID;
         }
 
         /// <summary>
@@ -170,6 +257,46 @@ namespace TorrentDownloader
         protected int GenerateTransactionID()
         {
             return (Int32)(new Random(3).Next());
+        }
+
+        //
+        // Genesis and parsing of udp message (big endian)
+        //
+
+        protected Int16 BitConvertInt16(byte[] data, int start_index)
+        {
+            int bytes = 16 / 8;
+            byte[] ordered_data = data.Skip(start_index).Take(bytes).Reverse().ToArray();
+            return BitConverter.ToInt16(ordered_data, 0);
+        }
+        protected Int32 BitConvertInt32(byte[] data, int start_index)
+        {
+            int bytes = 32 / 8;
+            byte[] ordered_data = data.Skip(start_index).Take(bytes).Reverse().ToArray();
+            return BitConverter.ToInt32(ordered_data, 0);
+        }
+        protected Int64 BitConvertInt64(byte[] data, int start_index)
+        {
+            int bytes = 64 / 8;
+            byte[] ordered_data = data.Skip(start_index).Take(bytes).Reverse().ToArray();
+            return BitConverter.ToInt64(ordered_data, 0);
+        }
+
+        protected void AppendMessage(List<byte> msg, Int16 value)
+        {
+            msg.AddRange(BitConverter.GetBytes(value).Reverse().ToArray());
+        }
+        protected void AppendMessage(List<byte> msg, Int32 value)
+        {
+            msg.AddRange(BitConverter.GetBytes(value).Reverse().ToArray());
+        }
+        protected void AppendMessage(List<byte> msg, Int64 value)
+        {
+            msg.AddRange(BitConverter.GetBytes(value).Reverse().ToArray());
+        }
+        protected void AppendMessage(List<byte> msg, byte[] value)
+        {
+            msg.AddRange(value.Reverse().ToArray());
         }
 
     }
