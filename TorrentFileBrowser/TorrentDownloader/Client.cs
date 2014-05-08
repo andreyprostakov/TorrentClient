@@ -19,9 +19,9 @@ namespace TorrentDownloader
 
         private TcpListener listener;
         private Thread listen_thread;
-        private Form1 form;
+        private MainForm form;
 
-        public Client(Form1 form)
+        public Client(MainForm form)
         {
             this.form = form;
             Id = GenerateId();

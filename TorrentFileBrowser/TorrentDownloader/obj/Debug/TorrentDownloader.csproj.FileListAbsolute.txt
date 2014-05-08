@@ -4,7 +4,6 @@ D:\Учеба\Курсовой проект\TorrentFileBrowser\TorrentDownloader
 D:\Учеба\Курсовой проект\TorrentFileBrowser\TorrentDownloader\bin\Debug\BDecoded.dll
 D:\Учеба\Курсовой проект\TorrentFileBrowser\TorrentDownloader\bin\Debug\BDecoded.pdb
 D:\Учеба\Курсовой проект\TorrentFileBrowser\TorrentDownloader\obj\Debug\TorrentDownloader.csprojResolveAssemblyReference.cache
-D:\Учеба\Курсовой проект\TorrentFileBrowser\TorrentDownloader\obj\Debug\TorrentDownloader.Form1.resources
 D:\Учеба\Курсовой проект\TorrentFileBrowser\TorrentDownloader\obj\Debug\TorrentDownloader.Properties.Resources.resources
 D:\Учеба\Курсовой проект\TorrentFileBrowser\TorrentDownloader\obj\Debug\TorrentDownloader.csproj.GenerateResource.Cache
 D:\Учеба\Курсовой проект\TorrentFileBrowser\TorrentDownloader\obj\Debug\TorrentDownloader.exe
@@ -12,3 +11,4 @@ D:\Учеба\Курсовой проект\TorrentFileBrowser\TorrentDownloader
 D:\Учеба\Курсовой проект\bin\TorrentDownloader.exe.config
 D:\Учеба\Курсовой проект\bin\TorrentDownloader.exe
 D:\Учеба\Курсовой проект\bin\TorrentDownloader.pdb
+D:\Учеба\Курсовой проект\TorrentFileBrowser\TorrentDownloader\obj\Debug\TorrentDownloader.MainForm.resources
