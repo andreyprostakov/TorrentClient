@@ -17,19 +17,13 @@ namespace TorrentDownloader
         public IPAddress ip_listen;
         public int port_listen;
 
-        private TcpListener listener;
-        private Thread listen_thread;
-        private MainForm form;
+        public static int FILE_CHUNK_SIZE = 16384;
 
-        public Client(MainForm form)
+        public Client()
         {
-            this.form = form;
             Id = GenerateId();
             ip_listen = IPAddress.Any;
             port_listen = DefinePort();
-            listener = new TcpListener(ip_listen, port_listen);
-            listen_thread = new Thread(new ThreadStart(listener.Start));
-            listen_thread.Start();
             return;
         }
 
@@ -56,6 +50,21 @@ namespace TorrentDownloader
             }
         }
 
+        public void CollectTorrentPeers(Torrent torrent)
+        {
+            List<String> peers_addresses = new List<String>();
+            foreach (String announce_url in torrent.Announces)
+            {
+                String blank_message;
+                TorrentTrackerInfo announcer_info = ConnectAnnouncer(torrent, announce_url, out blank_message);
+                if (announcer_info == null) continue;
+                else peers_addresses.AddRange(announcer_info.PeersAddresses);
+            }
+            peers_addresses.Sort();
+            torrent.PeersAddresses = peers_addresses.Distinct().ToArray();
+            return;
+        }
+
         private byte[] GenerateId()
         {
             long time = DateTime.UtcNow.ToBinary();
@@ -65,22 +74,9 @@ namespace TorrentDownloader
             SHA1 cryptographer = SHA1.Create();
             return cryptographer.ComputeHash(random_array);
         }
-
-        private void ListenForPeers()
-        {
-            listener.Start();
-            while (true)
-            {
-                TcpClient peer = listener.AcceptTcpClient();
-                Thread handle_thread = new Thread(new ParameterizedThreadStart(HandleClient));
-                handle_thread.Start();
-            }
-            return;
-        }
-
+        
         private void HandleClient(object _client)
         {
-            form.Close();
             TcpClient client = (TcpClient)_client;
             NetworkStream reader = client.GetStream();
             byte[] msg = new byte[256];

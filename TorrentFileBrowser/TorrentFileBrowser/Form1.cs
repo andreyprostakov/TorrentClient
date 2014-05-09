@@ -38,12 +38,10 @@ namespace TorrentFileBrowser
             String raw_content = reader.ReadToEnd();
             textRawContent.Text = raw_content;
             reader.Close();
-            Stream file_stream = new FileStream(filename, FileMode.Open);
-            BDecoded.BEncodedDecoder decoder = new BDecoded.BEncodedDecoder();
             try
             {
                 OutputAsYml output = new OutputAsYml();
-                decoded = decoder.Decode(file_stream);
+                decoded = BEncodedDecoder.DecodeStream(new FileStream(filename, FileMode.Open));
                 textParsedContent.Text = output.Output(decoded);
                 torrent_file = new Torrent(decoded);
                 textOutputContent.Text = decoded.BEncode();

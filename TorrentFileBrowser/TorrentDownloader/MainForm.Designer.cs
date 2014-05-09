@@ -73,7 +73,7 @@
             this.buttonConnect.TabIndex = 16;
             this.buttonConnect.Text = "Connect peer";
             this.buttonConnect.UseVisualStyleBackColor = false;
-            this.buttonConnect.Click += new System.EventHandler(this.buttonConnect_Click_1);
+            this.buttonConnect.Click += new System.EventHandler(this.buttonConnect_Click);
             // 
             // label2
             // 

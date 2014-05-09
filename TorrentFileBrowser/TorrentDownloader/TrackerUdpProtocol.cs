@@ -14,15 +14,15 @@ namespace TorrentDownloader
     {
         public int Port { get; private set; }
         public String LastError { get; private set; }
-        protected int TransactionID { get; set; }
-        protected long ConnectionID { get; set; }
-        private Client Client { get; set; }
+        protected int TransactionID;
+        protected long ConnectionID;
+        private Client Client;
 
         public const long TORRENT_PROTOCOL_CODE = 0x41727101980;
         public enum ACTIONS: int {Connect = 0, Announce = 1, Scrape = 2, Error = 3}
         public enum EVENTS : int {None = 0, Completed = 1, Started = 2, Stopped = 3}
         protected String UDP_ADDRESS_PATTERN = @"udp://(.+):(\d{1,4})";
-        private const int TIMEOUT = 5000;
+        private const int TIMEOUT = 1000;
 
         public TrackerUdpProtocol(Client client)
         {
@@ -285,9 +285,7 @@ namespace TorrentDownloader
         {
             msg.AddRange(value.Reverse().ToArray());
         }
-
-
-
+        
         private static byte[] StringToByteArray(string hex)
         {
             return Enumerable.Range(0, hex.Length)

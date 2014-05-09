@@ -24,8 +24,7 @@ namespace TorrentDownloader
         {
             InitializeComponent();
             dialogOpenTorrentFile.Filter = "Torrent files|*.torrent";
-            client = new Client(this);
-            //ConnectToPeer(null, 2);
+            client = new Client();
             return;
         }
 
@@ -35,8 +34,10 @@ namespace TorrentDownloader
             if (dialogOpenTorrentFile.ShowDialog() == DialogResult.OK)
             {
                 torrent = new Torrent(dialogOpenTorrentFile.FileName);
-                BDecoded.OutputAsYml printer = new BDecoded.OutputAsYml();
-                textParsedTorrentFIle.Text = printer.Output(torrent.Meta);
+                client.CollectTorrentPeers(torrent);
+                listPeers.Items.Clear();
+                listPeers.Items.AddRange(torrent.PeersAddresses);
+                textParsedTorrentFIle.Text = torrent.ToYml();
                 listAnnounces.Items.Clear();
                 listAnnounces.Items.AddRange(torrent.Announces);
                 var hash = torrent.InfoHash;
@@ -51,37 +52,45 @@ namespace TorrentDownloader
         
         protected void HideErrorMessage()
         {
-            //labelErrorMessage.Hide();
             textAnnouncerInfo.Text = "";
             return;
         }
 
         protected void ShowErrorMessage(String message)
         {
-            //labelErrorMessage.Text = message;
-            //labelErrorMessage.Show();
             textAnnouncerInfo.Text = message;
             return;
         }
 
-        private void ConnectToPeer(IPAddress IP, int port)
+        private void ConnectToPeer(String ip, int port)
         {
-            TcpClient tcp_client = new TcpClient();
             try
             {
-                tcp_client.Connect("93.171.161.49", 47278);
+                TcpClient tcp_client = new TcpClient(ip, port);
                 var stream = tcp_client.GetStream();
-                String msg_handshake = String.Format("handshake: 19BitTorrent protocol        {0}{1}", HttpUtility.UrlEncode(client.Id), HttpUtility.UrlEncode(torrent.InfoHash));
-                stream.Write(Encoding.ASCII.GetBytes(msg_handshake), 0, msg_handshake.Length);
+                List<byte> message = new List<byte>();
+                message.Add((byte)19);
+                message.AddRange(Encoding.UTF8.GetBytes("BitTorrent protocol"));
+                message.AddRange(new byte[8]);
+                message.AddRange(torrent.InfoHash.Reverse().ToArray());
+                message.AddRange(client.Id);
+                stream.Write(message.ToArray(), 0, message.Count);
                 byte[] buffer = new byte[128];
-                int result = stream.Read(buffer, 0, 4);
-                String received = Encoding.ASCII.GetString(buffer, 0, result);
+                int result = stream.Read(buffer, 0, 128);
+                if (result > 68)
+                {
+                    int pstrlen = buffer[0];
+                    String protocol = Encoding.UTF8.GetString(buffer, 1, pstrlen);
+                    byte[] info_hash = buffer.Skip(28).Take(20).ToArray();
+                    byte[] peer_id = buffer.Skip(48).Take(20).ToArray();
+                    result = 0;
+                }
+                tcp_client.Close();
             }
             catch (SocketException ex)
             {
                 ShowErrorMessage(ex.Message);
             }
-            tcp_client.Close();
             return;
         }
 
@@ -96,8 +105,6 @@ namespace TorrentDownloader
                 {
                     textAnnouncerInfo.Text += String.Format("{0}: {1}\n", key_value.Key, key_value.Value);
                 }
-                listPeers.Items.Clear();
-                listPeers.Items.AddRange(tracker_info.PeersAddresses.ToArray());
             }
             else
             {
@@ -118,7 +125,7 @@ namespace TorrentDownloader
             ConnectAnnouncer(uri);
         }
 
-        private void buttonConnect_Click_1(object sender, EventArgs e)
+        private void buttonConnect_Click(object sender, EventArgs e)
         {
             HideErrorMessage();
             String address = (String)listPeers.SelectedItem;
@@ -127,10 +134,8 @@ namespace TorrentDownloader
                 ShowErrorMessage("URI not determined");
                 return;
             }
-            String[] address_parts = address.Split(':');
-            IPAddress ip = IPAddress.Parse(address_parts[0]);
-            int port = Int32.Parse(address_parts[1]);
-            ConnectToPeer(ip, port);
+            PeerTcpProtocol peer = new PeerTcpProtocol(client);
+            peer.Connect(torrent, address);
             return;
         }
     }

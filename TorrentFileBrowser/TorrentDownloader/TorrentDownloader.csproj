@@ -47,7 +47,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>icon.ico</ApplicationIcon>
+    <ApplicationIcon>download.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -74,6 +74,7 @@
     <Compile Include="PeerConnector.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="PeerTcpProtocol.cs" />
     <Compile Include="Torrent.cs" />
     <Compile Include="TorrentTrackerInfo.cs" />
     <Compile Include="TrackerHttpProtocol.cs" />
@@ -112,6 +113,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="download.ico" />
     <Content Include="icon.ico" />
     <None Include="Resources\icon.ico" />
     <None Include="Resources\Icon1.ico" />

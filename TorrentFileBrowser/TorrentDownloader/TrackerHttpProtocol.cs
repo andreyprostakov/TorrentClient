@@ -6,15 +6,17 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using BDecoded;
 
 namespace TorrentDownloader
 {
     public class TrackerHttpProtocol
     {
-        Client Client { get; set; }
-        Torrent Torrent {get; set;}
-        int Port { get; set; }
         public BDecoded.BDictionary Parsed_response { get; set; }
+        private static int TIMEOUT = 3000;
+        private Client Client { get; set; }
+        private Torrent Torrent { get; set; }
+        private int Port { get; set; }
 
 
         public TrackerHttpProtocol(Client client)
@@ -51,8 +53,9 @@ namespace TorrentDownloader
             String request_url = BuildRequest(address);
             String response_content = GetResponse(request_url, out result_msg);
             if (response_content == null) return false;
-            BDecoded.BEncodedDecoder decoder = new BDecoded.BEncodedDecoder();
-            Parsed_response = (BDecoded.BDictionary)decoder.Decode(new MemoryStream(Encoding.ASCII.GetBytes(response_content)));
+            BEncodedDecoder decoder = new BEncodedDecoder();
+            Stream response_data_stream = new MemoryStream(Encoding.ASCII.GetBytes(response_content));
+            Parsed_response = (BDictionary)BEncodedDecoder.DecodeStream(response_data_stream);
             result_msg = "OK";
             return true;
         }
@@ -62,7 +65,7 @@ namespace TorrentDownloader
             result_msg = "HTTP";            
             HttpWebRequest request = HttpWebRequest.Create(address) as HttpWebRequest;
             request.Method = WebRequestMethods.Http.Get;
-            request.Timeout = 5000;
+            request.Timeout = TIMEOUT;
             try
             {
                 WebResponse response = request.GetResponse();

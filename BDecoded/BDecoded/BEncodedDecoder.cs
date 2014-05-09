@@ -32,6 +32,11 @@ namespace BDecoded
                 throw new FormatException();
         }
 
+        public static IBElement DecodeStream(Stream bencoded_reader)
+        {
+            return (new BEncodedDecoder()).Decode(bencoded_reader);
+        }
+
         protected IBElement ReadElement()
         {
             char cur_char = (char)reader.Read();
