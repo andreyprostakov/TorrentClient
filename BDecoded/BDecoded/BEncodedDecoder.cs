@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 
 namespace BDecoded
 {
-    public class Decoder
+    public class BEncodedDecoder
     {
         protected StreamReader reader;
 
         public IBElement Decode(Stream bencoded_reader)
-        {            
+        {
             reader = new StreamReader(bencoded_reader, Encoding.ASCII);
             BList list = null;
             try

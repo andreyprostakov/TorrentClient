@@ -43,7 +43,7 @@
     <Compile Include="BDecoded\BList.cs" />
     <Compile Include="BDecoded\BNumber.cs" />
     <Compile Include="BDecoded\BText.cs" />
-    <Compile Include="BDecoded\Decoder.cs" />
+    <Compile Include="BDecoded\BEncodedDecoder.cs" />
     <Compile Include="BDecoded\IBElement.cs" />
     <Compile Include="BDecoded\OutputAsYml.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

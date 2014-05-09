@@ -12,20 +12,18 @@ namespace TorrentDownloader
     public class Torrent
     {
         public BDecoded.BDictionary Meta { get; private set; }
-
         public List<File> Files;
-
         public File TargetFile;
-
         public String[] Announces { get; private set; }
+        public byte[] InfoHash { get; private set; }
+        public Dictionary<String, TorrentTrackerInfo> Trackers;
 
-        public byte[] InfoHash
+        private static byte[] StringToByteArray(string hex)
         {
-            get
-            {
-                String info_content = Meta["info"].BEncode();
-                return SHA1.Create().ComputeHash(Encoding.ASCII.GetBytes(info_content));
-            }
+            return Enumerable.Range(0, hex.Length)
+                             .Where(x => x % 2 == 0)
+                             .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
+                             .ToArray();
         }
 
         public long Size
@@ -50,7 +48,7 @@ namespace TorrentDownloader
         public Torrent(String file_name)
         {
             Stream reader = new FileStream(file_name, FileMode.Open);
-            BDecoded.Decoder decoder = new BDecoded.Decoder();
+            BDecoded.BEncodedDecoder decoder = new BDecoded.BEncodedDecoder();
             BDecoded.IBElement parsed_torrent_file = decoder.Decode(reader);
             if (!(parsed_torrent_file is BDecoded.BDictionary)) 
                 throw new FormatException();
@@ -60,10 +58,23 @@ namespace TorrentDownloader
             CollectAnnounces();
             CollectFiles((BDictionary)meta_info["info"]);
 
-            StreamReader stream_reader = new StreamReader(file_name, Encoding.ASCII);
-            String all_content = stream_reader.ReadToEnd();
-            original_info = new string(all_content.Skip(all_content.IndexOf("4:infod") + "4:infod".Length).ToArray());
-            stream_reader.Close();
+            //byte[] target_hash = StringToByteArray("b3b3e49c01d855e1e101dd7ebb32fd31e15a5bee").Reverse().ToArray();
+
+            Stream stream_reader = new FileStream(file_name, FileMode.Open);
+            byte[] content = new byte[stream_reader.Length];
+            stream_reader.Read(content, 0, content.Length);
+            List<byte> dynamic_content = new List<byte>(content);
+            int index = 0;
+            for (int i = 6; i < content.Length; i++)
+            {
+                if (content[i] == (byte)'d' && content[i - 1] == (byte)'o' && content[i - 2] == (byte)'f' && content[i - 3] == (byte)'n')
+                    index = i;
+            }
+            dynamic_content = content.Skip(index).ToList();
+            dynamic_content.RemoveAt(dynamic_content.Count - 1);
+            InfoHash = SHA1.Create().ComputeHash(dynamic_content.ToArray()).Reverse().ToArray();
+
+            Trackers = new Dictionary<string, TorrentTrackerInfo>();
             return;            
         }
 

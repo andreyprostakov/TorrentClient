@@ -33,21 +33,22 @@ namespace TorrentDownloader
             return;
         }
 
-        public BDecoded.IBElement ConnectAnnouncer(Torrent torrent, String address, out String msg)
+        public TorrentTrackerInfo ConnectAnnouncer(Torrent torrent, String address, out String msg)
         {
             if (torrent == null || String.IsNullOrEmpty(address)) throw new ArgumentNullException();
             if (address.Contains("http://") || address.Contains("https://"))
             {
                 TrackerHttpProtocol tracker = new TrackerHttpProtocol(this);
                 tracker.Connect(torrent, address, out msg);
-                return tracker.Parsed_response;
+                return null;
             }
             else if (address.Contains("udp://"))
             {
                 TrackerUdpProtocol tracker = new TrackerUdpProtocol(this);
-                if (!tracker.Connect(address, torrent)) msg = tracker.LastError;
+                TorrentTrackerInfo tracker_info = tracker.Connect(address, torrent);
+                if (tracker_info == null) msg = tracker.LastError;
                 else msg = "";
-                return null;
+                return tracker_info;
             }
             else
             {

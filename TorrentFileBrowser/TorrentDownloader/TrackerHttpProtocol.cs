@@ -42,6 +42,7 @@ namespace TorrentDownloader
             uri_gen.AddParameter("uploaded", 0);
             uri_gen.AddParameter("downloaded", 0);
             uri_gen.AddParameter("no_peers_id", 0);
+            uri_gen.AddParameter("compact", 0);
             return uri_gen.Uri;
         }
 
@@ -50,7 +51,7 @@ namespace TorrentDownloader
             String request_url = BuildRequest(address);
             String response_content = GetResponse(request_url, out result_msg);
             if (response_content == null) return false;
-            BDecoded.Decoder decoder = new BDecoded.Decoder();
+            BDecoded.BEncodedDecoder decoder = new BDecoded.BEncodedDecoder();
             Parsed_response = (BDecoded.BDictionary)decoder.Decode(new MemoryStream(Encoding.ASCII.GetBytes(response_content)));
             result_msg = "OK";
             return true;

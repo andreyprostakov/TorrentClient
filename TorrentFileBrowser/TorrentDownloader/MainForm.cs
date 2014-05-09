@@ -39,6 +39,7 @@ namespace TorrentDownloader
                 textParsedTorrentFIle.Text = printer.Output(torrent.Meta);
                 listAnnounces.Items.Clear();
                 listAnnounces.Items.AddRange(torrent.Announces);
+                var hash = torrent.InfoHash;
             }
             return;
         }
@@ -47,55 +48,89 @@ namespace TorrentDownloader
         {
             this.Close();
         }
-
-        private void buttonConnect_Click(object sender, EventArgs e)
-        {
-            HideErrorMessage();
-            String uri = (String)listAnnounces.SelectedItem;
-            if (uri == "") 
-            {
-                ShowErrorMessage("URI not determined");
-                return; 
-            }
-            String result;
-            BDecoded.IBElement response;
-            if ((response = client.ConnectAnnouncer(torrent, uri, out result)) != null)
-            {
-                BDecoded.OutputAsYml printer = new BDecoded.OutputAsYml();
-                textResponce.Text = printer.Output(response);            
-            }
-            else
-            {
-                ShowErrorMessage(result);
-                textResponce.Text = "";
-            }           
-            return;
-        }
-
+        
         protected void HideErrorMessage()
         {
-            labelErrorMessage.Hide();
+            //labelErrorMessage.Hide();
+            textAnnouncerInfo.Text = "";
             return;
         }
 
         protected void ShowErrorMessage(String message)
         {
-            labelErrorMessage.Text = message;
-            labelErrorMessage.Show();
+            //labelErrorMessage.Text = message;
+            //labelErrorMessage.Show();
+            textAnnouncerInfo.Text = message;
             return;
         }
 
-        private void ConnectToPeer(String IP, int port)
+        private void ConnectToPeer(IPAddress IP, int port)
         {
             TcpClient tcp_client = new TcpClient();
-            tcp_client.Connect("127.21.5.99", 45746);
-            var stream = tcp_client.GetStream();
-            String msg_handshake = String.Format("handshake: 19BitTorrent protocol        {0}{1}", HttpUtility.UrlEncode(client.Id), HttpUtility.UrlEncode(client.Id));
-            stream.Write(Encoding.ASCII.GetBytes(msg_handshake), 0, msg_handshake.Length);
-            byte[] buffer = new byte[128];
-            int result = stream.Read(buffer, 0, 4);
-            String received = Encoding.ASCII.GetString(buffer, 0, result);
+            try
+            {
+                tcp_client.Connect("93.171.161.49", 47278);
+                var stream = tcp_client.GetStream();
+                String msg_handshake = String.Format("handshake: 19BitTorrent protocol        {0}{1}", HttpUtility.UrlEncode(client.Id), HttpUtility.UrlEncode(torrent.InfoHash));
+                stream.Write(Encoding.ASCII.GetBytes(msg_handshake), 0, msg_handshake.Length);
+                byte[] buffer = new byte[128];
+                int result = stream.Read(buffer, 0, 4);
+                String received = Encoding.ASCII.GetString(buffer, 0, result);
+            }
+            catch (SocketException ex)
+            {
+                ShowErrorMessage(ex.Message);
+            }
             tcp_client.Close();
+            return;
+        }
+
+        private void ConnectAnnouncer(String announce_url)
+        {
+            String result;
+            TorrentTrackerInfo tracker_info;
+            if ((tracker_info = client.ConnectAnnouncer(torrent, announce_url, out result)) != null)
+            {
+                textAnnouncerInfo.Text = "";
+                foreach (var key_value in tracker_info.Stats)
+                {
+                    textAnnouncerInfo.Text += String.Format("{0}: {1}\n", key_value.Key, key_value.Value);
+                }
+                listPeers.Items.Clear();
+                listPeers.Items.AddRange(tracker_info.PeersAddresses.ToArray());
+            }
+            else
+            {
+                ShowErrorMessage(result);
+            }           
+            return;
+        }
+
+        private void listAnnounces_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            HideErrorMessage();
+            String uri = (String)listAnnounces.SelectedItem;
+            if (uri == "")
+            {
+                ShowErrorMessage("URI not determined");
+                return;
+            }
+            ConnectAnnouncer(uri);
+        }
+
+        private void buttonConnect_Click_1(object sender, EventArgs e)
+        {
+            HideErrorMessage();
+            String address = (String)listPeers.SelectedItem;
+            if (address == "")
+            {
+                ShowErrorMessage("URI not determined");
+                return;
+            }
+            String[] address_parts = address.Split(':');
+            IPAddress ip = IPAddress.Parse(address_parts[0]);
+            int port = Int32.Parse(address_parts[1]);
+            ConnectToPeer(ip, port);
             return;
         }
     }

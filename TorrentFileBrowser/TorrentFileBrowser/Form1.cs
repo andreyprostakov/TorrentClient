@@ -39,7 +39,7 @@ namespace TorrentFileBrowser
             textRawContent.Text = raw_content;
             reader.Close();
             Stream file_stream = new FileStream(filename, FileMode.Open);
-            BDecoded.Decoder decoder = new BDecoded.Decoder();
+            BDecoded.BEncodedDecoder decoder = new BDecoded.BEncodedDecoder();
             try
             {
                 OutputAsYml output = new OutputAsYml();
