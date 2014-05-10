@@ -29,8 +29,6 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            this.label3 = new System.Windows.Forms.Label();
-            this.textAnnouncerInfo = new System.Windows.Forms.RichTextBox();
             this.buttonConnect = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
             this.textParsedTorrentFIle = new System.Windows.Forms.RichTextBox();
@@ -40,34 +38,19 @@
             this.openTorrentFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.dialogOpenTorrentFile = new System.Windows.Forms.OpenFileDialog();
-            this.listAnnounces = new System.Windows.Forms.ListBox();
             this.listPeers = new System.Windows.Forms.ListBox();
             this.label4 = new System.Windows.Forms.Label();
+            this.tableTrackers = new System.Windows.Forms.DataGridView();
+            this.buttonUpdateTrackersInfo = new System.Windows.Forms.Button();
             this.menuStrip1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.tableTrackers)).BeginInit();
             this.SuspendLayout();
-            // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(298, 220);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(34, 13);
-            this.label3.TabIndex = 18;
-            this.label3.Text = "Stats:";
-            // 
-            // textAnnouncerInfo
-            // 
-            this.textAnnouncerInfo.Location = new System.Drawing.Point(301, 236);
-            this.textAnnouncerInfo.Name = "textAnnouncerInfo";
-            this.textAnnouncerInfo.Size = new System.Drawing.Size(237, 144);
-            this.textAnnouncerInfo.TabIndex = 17;
-            this.textAnnouncerInfo.Text = "";
             // 
             // buttonConnect
             // 
             this.buttonConnect.BackColor = System.Drawing.Color.CornflowerBlue;
             this.buttonConnect.ForeColor = System.Drawing.SystemColors.ControlLightLight;
-            this.buttonConnect.Location = new System.Drawing.Point(562, 330);
+            this.buttonConnect.Location = new System.Drawing.Point(814, 330);
             this.buttonConnect.Name = "buttonConnect";
             this.buttonConnect.Size = new System.Drawing.Size(192, 50);
             this.buttonConnect.TabIndex = 16;
@@ -78,17 +61,17 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(298, 42);
+            this.label2.Location = new System.Drawing.Point(254, 42);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(67, 13);
+            this.label2.Size = new System.Drawing.Size(52, 13);
             this.label2.TabIndex = 15;
-            this.label2.Text = "Announcers:";
+            this.label2.Text = "Trackers:";
             // 
             // textParsedTorrentFIle
             // 
             this.textParsedTorrentFIle.Location = new System.Drawing.Point(12, 58);
             this.textParsedTorrentFIle.Name = "textParsedTorrentFIle";
-            this.textParsedTorrentFIle.Size = new System.Drawing.Size(276, 322);
+            this.textParsedTorrentFIle.Size = new System.Drawing.Size(230, 322);
             this.textParsedTorrentFIle.TabIndex = 21;
             this.textParsedTorrentFIle.Text = "";
             // 
@@ -108,7 +91,7 @@
             this.fileToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(773, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(1018, 24);
             this.menuStrip1.TabIndex = 22;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -136,19 +119,10 @@
             this.exitToolStripMenuItem.Text = "Exit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
             // 
-            // listAnnounces
-            // 
-            this.listAnnounces.FormattingEnabled = true;
-            this.listAnnounces.Location = new System.Drawing.Point(304, 58);
-            this.listAnnounces.Name = "listAnnounces";
-            this.listAnnounces.Size = new System.Drawing.Size(234, 147);
-            this.listAnnounces.TabIndex = 24;
-            this.listAnnounces.SelectedIndexChanged += new System.EventHandler(this.listAnnounces_SelectedIndexChanged);
-            // 
             // listPeers
             // 
             this.listPeers.FormattingEnabled = true;
-            this.listPeers.Location = new System.Drawing.Point(565, 58);
+            this.listPeers.Location = new System.Drawing.Point(817, 58);
             this.listPeers.Name = "listPeers";
             this.listPeers.Size = new System.Drawing.Size(189, 251);
             this.listPeers.TabIndex = 26;
@@ -156,25 +130,46 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(559, 42);
+            this.label4.Location = new System.Drawing.Point(811, 42);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(37, 13);
             this.label4.TabIndex = 25;
             this.label4.Text = "Peers:";
+            // 
+            // tableTrackers
+            // 
+            this.tableTrackers.BackgroundColor = System.Drawing.SystemColors.ButtonHighlight;
+            this.tableTrackers.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.tableTrackers.EditMode = System.Windows.Forms.DataGridViewEditMode.EditProgrammatically;
+            this.tableTrackers.Location = new System.Drawing.Point(248, 58);
+            this.tableTrackers.Name = "tableTrackers";
+            this.tableTrackers.Size = new System.Drawing.Size(563, 177);
+            this.tableTrackers.TabIndex = 27;
+            // 
+            // buttonUpdateTrackersInfo
+            // 
+            this.buttonUpdateTrackersInfo.BackColor = System.Drawing.Color.CornflowerBlue;
+            this.buttonUpdateTrackersInfo.ForeColor = System.Drawing.SystemColors.ControlLightLight;
+            this.buttonUpdateTrackersInfo.Location = new System.Drawing.Point(248, 241);
+            this.buttonUpdateTrackersInfo.Name = "buttonUpdateTrackersInfo";
+            this.buttonUpdateTrackersInfo.Size = new System.Drawing.Size(237, 42);
+            this.buttonUpdateTrackersInfo.TabIndex = 28;
+            this.buttonUpdateTrackersInfo.Text = "Update";
+            this.buttonUpdateTrackersInfo.UseVisualStyleBackColor = false;
+            this.buttonUpdateTrackersInfo.Click += new System.EventHandler(this.buttonUpdateTrackersInfo_Click);
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.Lavender;
-            this.ClientSize = new System.Drawing.Size(773, 392);
+            this.ClientSize = new System.Drawing.Size(1018, 392);
+            this.Controls.Add(this.buttonUpdateTrackersInfo);
+            this.Controls.Add(this.tableTrackers);
             this.Controls.Add(this.listPeers);
             this.Controls.Add(this.label4);
-            this.Controls.Add(this.listAnnounces);
             this.Controls.Add(this.textParsedTorrentFIle);
             this.Controls.Add(this.label1);
-            this.Controls.Add(this.label3);
-            this.Controls.Add(this.textAnnouncerInfo);
             this.Controls.Add(this.buttonConnect);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.menuStrip1);
@@ -184,6 +179,7 @@
             this.Text = "Torrent downloader";
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.tableTrackers)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -191,8 +187,6 @@
 
         #endregion
 
-        private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.RichTextBox textAnnouncerInfo;
         private System.Windows.Forms.Button buttonConnect;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.RichTextBox textParsedTorrentFIle;
@@ -202,9 +196,10 @@
         private System.Windows.Forms.ToolStripMenuItem openTorrentFileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
         private System.Windows.Forms.OpenFileDialog dialogOpenTorrentFile;
-        private System.Windows.Forms.ListBox listAnnounces;
         private System.Windows.Forms.ListBox listPeers;
         private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.DataGridView tableTrackers;
+        private System.Windows.Forms.Button buttonUpdateTrackersInfo;
     }
 }
 

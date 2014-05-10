@@ -13,10 +13,12 @@ namespace TorrentDownloader
     public class TrackerHttpProtocol
     {
         public BDecoded.BDictionary Parsed_response { get; set; }
+        private Client Client;
+        private Torrent Torrent;
+        private int Port;
+        private String base_address;
+
         private static int TIMEOUT = 3000;
-        private Client Client { get; set; }
-        private Torrent Torrent { get; set; }
-        private int Port { get; set; }
 
 
         public TrackerHttpProtocol(Client client)
@@ -26,11 +28,12 @@ namespace TorrentDownloader
             return;
         }
 
-        public bool Connect(Torrent torrent, String address, out String result_msg)
+        public bool Connect(Torrent torrent, String address)
         {
             Torrent = torrent;
-            if (address.Contains("http://")) return ConnectHttp(address, out result_msg);
-            else result_msg = "Unknown address format";
+            base_address = address;
+            if (address.Contains("http://")) return ConnectHttp(address);
+            else torrent.Announcers[address].Status = "Unknown address format";
             return false;
         }
 
@@ -48,21 +51,19 @@ namespace TorrentDownloader
             return uri_gen.Uri;
         }
 
-        protected bool ConnectHttp(String address, out String result_msg)
+        protected bool ConnectHttp(String address)
         {
             String request_url = BuildRequest(address);
-            String response_content = GetResponse(request_url, out result_msg);
+            String response_content = GetResponse(request_url);
             if (response_content == null) return false;
             BEncodedDecoder decoder = new BEncodedDecoder();
             Stream response_data_stream = new MemoryStream(Encoding.ASCII.GetBytes(response_content));
             Parsed_response = (BDictionary)BEncodedDecoder.DecodeStream(response_data_stream);
-            result_msg = "OK";
             return true;
         }
 
-        public String GetResponse(String address, out String result_msg)
-        {
-            result_msg = "HTTP";            
+        public String GetResponse(String address)
+        {        
             HttpWebRequest request = HttpWebRequest.Create(address) as HttpWebRequest;
             request.Method = WebRequestMethods.Http.Get;
             request.Timeout = TIMEOUT;
@@ -78,7 +79,7 @@ namespace TorrentDownloader
             }
             catch (WebException ex)
             {
-                result_msg = ex.Message;
+                Torrent.Announcers[base_address].Status = ex.Message;
                 return null;
             }
         }

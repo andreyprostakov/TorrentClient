@@ -5,7 +5,6 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using System.Security.Cryptography;
 using BDecoded;
 
 namespace TorrentDownloader
@@ -15,10 +14,10 @@ namespace TorrentDownloader
         public BDecoded.BDictionary Meta { get; private set; }
         public List<File> Files;
         public File TargetFile;
-        public String[] Announces { get; private set; }
+        public Dictionary<String, TorrentTrackerInfo> Announcers { get; private set; }
         public byte[] InfoHash { get; private set; }
         public Dictionary<String, TorrentTrackerInfo> Trackers { get; set; }
-        public String[] PeersAddresses { get; set; }        
+        public String[] PeersAddresses { get; set; }
         public long Size
         {
             get
@@ -37,7 +36,7 @@ namespace TorrentDownloader
         public byte[] Bitfield;
         public int PieceLength { 
             get {
-                String text_value = ((BDictionary)Meta["info"])["piece_length"].ToString();
+                String text_value = ((BDictionary)Meta["info"])["piece length"].ToString();
                 return Int32.Parse(text_value);
             } 
         }
@@ -47,18 +46,22 @@ namespace TorrentDownloader
         {
             IBElement parsed_torrent_file = BEncodedDecoder.DecodeStream(new FileStream(file_name, FileMode.Open));
             if (!(parsed_torrent_file is BDictionary)) 
-                throw new FormatException();
+                throw new FormatException("Wrong .torrent file format");
 
-            BDictionary meta_info = (BDictionary)parsed_torrent_file;
-            Meta = meta_info;
-            CollectAnnounces(meta_info["announce"], meta_info["announce-list"]);
-            CollectFiles((BDictionary)meta_info["info"]);
+            Meta = (BDictionary)parsed_torrent_file;
+            CollectAnnounces(Meta["announce"], Meta["announce-list"]);
+            CollectFiles((BDictionary)Meta["info"]);
             ComputeInfoHash(file_name);
             Trackers = new Dictionary<string, TorrentTrackerInfo>();
             Bitfield = new byte[Size / PieceLength + 1];
+            PeersAddresses = new String[0];
             return;            
         }
 
+        /// <summary>
+        /// Proccess received piece
+        /// </summary>
+        /// <returns>true if valid</returns>
         public bool SavePiece(byte[] piece_data, int index)
         {
             byte[] checksum = SHA1.Create().ComputeHash(piece_data);
@@ -71,11 +74,16 @@ namespace TorrentDownloader
             return true;
         }
 
+        /// <summary>
+        /// Convert torrent meta info into user-friendly YML
+        /// </summary>
+        /// <returns></returns>
         public String ToYml()
         {
             BDecoded.OutputAsYml printer = new BDecoded.OutputAsYml();
             return printer.Output(this.Meta);
         }
+
 
         /// <summary>
         /// info_hash is necessary for torrent protocol
@@ -110,11 +118,11 @@ namespace TorrentDownloader
                 Files = new List<TorrentDownloader.File>();
                 BList files_list = (BList)info["files"];
                 foreach (BDictionary file_meta in files_list.Values)
-                    Files.Add(ReadFileInfo(file_meta));
+                    Files.Add(ConvertFileInfo(file_meta));
             }
             else if (info is BDictionary)
             {
-                this.TargetFile = ReadFileInfo((BDictionary)info);
+                this.TargetFile = ConvertFileInfo((BDictionary)info);
             }
             else
             {
@@ -127,7 +135,7 @@ namespace TorrentDownloader
         /// Translate bdecoded file data into specific File class (bridge)
         /// </summary>
         /// <returns>translation</returns>
-        private File ReadFileInfo(BDictionary file_meta)
+        private File ConvertFileInfo(BDictionary file_meta)
         {
             long size = Int64.Parse(file_meta["length"].ToString());
             String path = (file_meta["path"] == null ? file_meta["name"] : file_meta["path"]).ToString();
@@ -146,10 +154,9 @@ namespace TorrentDownloader
                 BList announces_list = (BList)meta_announce_list;
                 announces = announces_list.Values.Select(v => v.ToString()).ToList();
             }
-            if (announces.Count > 0)
-                Announces = announces.ToArray();
-            else
-                Announces = new String[] { announce };
+            this.Announcers = new Dictionary<string, TorrentTrackerInfo>();
+            foreach (String announcer in announces)
+                this.Announcers[announcer] = new TorrentTrackerInfo(this, announcer);
             return;
         }
 
@@ -167,11 +174,16 @@ namespace TorrentDownloader
             return Encoding.UTF8.GetBytes(piece_checksum);
         }
 
+        /// <summary>
+        /// Change bit in status bitfield
+        /// </summary>
+        /// <param name="index">index of a piece (bit)</param>
         private void SetPieceBit(int index)
         {
             int index_byte = index / 8;
             int index_bit = index % 8;
             byte map = (byte)(128 >> index_bit);
+            if (index_byte >= Bitfield.Length) throw new ArgumentException();
             Bitfield[index_byte] |= map;
             return;
         }

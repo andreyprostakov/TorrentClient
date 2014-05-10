@@ -27,44 +27,46 @@ namespace TorrentDownloader
             return;
         }
 
-        public TorrentTrackerInfo ConnectAnnouncer(Torrent torrent, String address, out String msg)
+        public bool ConnectAnnouncer(TorrentTrackerInfo tracker_info)
         {
-            if (torrent == null || String.IsNullOrEmpty(address)) throw new ArgumentNullException();
+            String address = tracker_info.AnnounceUrl;
+            if (String.IsNullOrEmpty(tracker_info.AnnounceUrl)) throw new FormatException("Wrong address");
             if (address.Contains("http://") || address.Contains("https://"))
             {
                 TrackerHttpProtocol tracker = new TrackerHttpProtocol(this);
-                tracker.Connect(torrent, address, out msg);
-                return null;
+                return tracker.Connect(tracker_info.Torrent, address);
             }
             else if (address.Contains("udp://"))
             {
                 TrackerUdpProtocol tracker = new TrackerUdpProtocol(this);
-                TorrentTrackerInfo tracker_info = tracker.Connect(address, torrent);
-                if (tracker_info == null) msg = tracker.LastError;
-                else msg = "";
-                return tracker_info;
+                return tracker.ConnectUDP(tracker_info);
             }
             else
             {
-                throw new FormatException("Wrong announce address given");
+                tracker_info.Status = "Wrong announce address given";
+                return false;
             }
         }
 
+        /// <summary>
+        /// Update torrent peers info
+        /// </summary>
         public void CollectTorrentPeers(Torrent torrent)
         {
             List<String> peers_addresses = new List<String>();
-            foreach (String announce_url in torrent.Announces)
+            foreach (var announcer_info in torrent.Announcers.Values)
             {
-                String blank_message;
-                TorrentTrackerInfo announcer_info = ConnectAnnouncer(torrent, announce_url, out blank_message);
-                if (announcer_info == null) continue;
-                else peers_addresses.AddRange(announcer_info.PeersAddresses);
+                if (ConnectAnnouncer(announcer_info)) peers_addresses.AddRange(announcer_info.PeersAddresses);
             }
             peers_addresses.Sort();
             torrent.PeersAddresses = peers_addresses.Distinct().ToArray();
             return;
         }
 
+        /// <summary>
+        /// Generate self peer_id as random
+        /// </summary>
+        /// <returns>raw peer id</returns>
         private byte[] GenerateId()
         {
             long time = DateTime.UtcNow.ToBinary();
@@ -75,32 +77,18 @@ namespace TorrentDownloader
             return cryptographer.ComputeHash(random_array);
         }
         
-        private void HandleClient(object _client)
-        {
-            TcpClient client = (TcpClient)_client;
-            NetworkStream reader = client.GetStream();
-            byte[] msg = new byte[256];
-            int bytes_read;
-            while (true)
-            {
-                bytes_read = 0;
-                try
-                {
-                    bytes_read = reader.Read(msg, 0, 256);
-                }
-                catch { break; }
-            }
-            ASCIIEncoding encoder = new ASCIIEncoding();
-            System.Diagnostics.Debug.WriteLine(encoder.GetString(msg, 0, bytes_read));
-            return;
-        }
-
+        /// <summary>
+        /// Check if port is free
+        /// </summary>
         private bool PortIsVacant(int port_number)
         {
             var connections = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners();
             return !connections.Any(c => c.Port == port_number);
         }
 
+        /// <summary>
+        /// Find a vacant port
+        /// </summary>
         private int DefinePort()
         {
             int port = 6900;

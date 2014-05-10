@@ -12,7 +12,6 @@ namespace TorrentDownloader
 {
     public class TrackerUdpProtocol
     {
-        public int Port { get; private set; }
         public String LastError { get; private set; }
         protected int TransactionID;
         protected long ConnectionID;
@@ -24,61 +23,60 @@ namespace TorrentDownloader
         protected String UDP_ADDRESS_PATTERN = @"udp://(.+):(\d{1,4})";
         private const int TIMEOUT = 1000;
 
+
         public TrackerUdpProtocol(Client client)
         {
             this.Client = client;
-            this.Port = client.port_listen;
-            this.LastError = "";
             return;
         }
 
-        public TorrentTrackerInfo Connect(String address, Torrent torrent)
+        public bool ConnectUDP(TorrentTrackerInfo tracker_info)
         {
+            String address = tracker_info.AnnounceUrl;
+            Torrent torrent = tracker_info.Torrent;
             if (!Regex.IsMatch(address, UDP_ADDRESS_PATTERN))
             {
-                LastError = "Unknown address format";
-                return null;
+                tracker_info.Status = "Unknown address format";
+                return false;
             }
-            UdpClient udp_client = CreateClient(address);
-            if (udp_client == null) return null;
-
-            byte[] connection_response = SendRequest(udp_client, ConnectionRequest());
-            if (connection_response == null || !ProcessConnectionResponse(connection_response))
+            try
             {
-                LastError = "Wrong connection response from tracker";
-                return null;
+                UdpClient udp_client = CreateClient(address);
+
+                byte[] connection_response = SendRequest(udp_client, ConnectionRequest());
+                ProcessConnectionResponse(connection_response);
+
+                byte[] scrape_response = SendRequest(udp_client, ScrapeRequest(torrent));
+                ProcessScrapeResponse(scrape_response, tracker_info);
+
+                byte[] announce_response = SendRequest(udp_client, AnnounceRequest(torrent));
+                ProcessAnnounceResponse(announce_response, tracker_info);
+
+                udp_client.Close();
+                tracker_info.Status = "Ok";
+                return true;
             }
-
-            TorrentTrackerInfo tracker_info = new TorrentTrackerInfo(torrent, address);
-            byte[] scrape_response = SendRequest(udp_client, ScrapeRequest(torrent));
-            if (scrape_response == null || !ProcessScrapeResponse(scrape_response, tracker_info)) return null;
-
-            byte[] announce_response = SendRequest(udp_client, AnnounceRequest(torrent));
-            if (announce_response == null || !ProcessAnnounceResponse(announce_response, tracker_info)) return null;
-
-            torrent.Trackers[address] = tracker_info;
-            udp_client.Close();
-            return tracker_info;
+            catch (Exception ex)
+            {
+                if ((ex is SocketException) || (ex is FormatException) || (ex is WebException))
+                {
+                    tracker_info.Status = ex.Message;
+                    return false;
+                }
+                throw ex;
+            }
         }
 
         /// <summary>
-        /// Send data using configured udp client
+        /// Send datagram using configured udp client
         /// </summary>
         /// <returns>received data or null</returns>
         protected byte[] SendRequest(UdpClient udp_client, byte[] request_data)
         {
-            try
-            {
-                udp_client.Send(request_data, request_data.Length);
-                IPEndPoint endpoint = new IPEndPoint(IPAddress.Any, 0);
-                byte[] response = udp_client.Receive(ref endpoint);
-                return response;
-            }
-            catch (SocketException ex)
-            {
-                LastError = ex.Message;
-                return null;
-            }
+            udp_client.Send(request_data, request_data.Length);
+            IPEndPoint endpoint = new IPEndPoint(IPAddress.Any, 0);
+            byte[] response = udp_client.Receive(ref endpoint);
+            return response;
         }
 
         /// <summary>
@@ -92,30 +90,23 @@ namespace TorrentDownloader
             String host_name;
             ParseTrackerAddress(address, out host_name, out target_port);
             UdpClient udp_client;
-            try
-            {
-                udp_client = new UdpClient(0, AddressFamily.InterNetwork);
-                udp_client.Connect(host_name, target_port);
-                udp_client.Client.ReceiveTimeout = TIMEOUT;
-                return udp_client;
-            }
-            catch (SocketException ex)
-            {
-                LastError = ex.Message;
-                return null;
-            }
+            udp_client = new UdpClient(0, AddressFamily.InterNetwork);
+            udp_client.Connect(host_name, target_port);
+            udp_client.Client.ReceiveTimeout = TIMEOUT;
+            return udp_client;
         }
 
         /// <summary>
         /// Parse target address to define host name and port
         /// </summary>
         /// <returns>true if parsing was successful</returns>
-        protected bool ParseTrackerAddress(String address, out String host_name, out int port)
+        protected void ParseTrackerAddress(String address, out String host_name, out int port)
         {
             var parse_result = System.Text.RegularExpressions.Regex.Match(address, UDP_ADDRESS_PATTERN);
             host_name = parse_result.Groups[1].Value;
             bool correct_port = Int32.TryParse(parse_result.Groups[2].Value, out port);
-            return !String.IsNullOrEmpty(host_name) && correct_port;
+            if (String.IsNullOrEmpty(host_name) || !correct_port) throw new FormatException("Wrong address format");
+            return;
         }
 
         /// <summary>
@@ -137,12 +128,13 @@ namespace TorrentDownloader
         /// Parse connection response and define connection id
         /// </summary>
         /// <returns>true if response is correct</returns>
-        protected bool ProcessConnectionResponse(byte[] response)
+        protected void ProcessConnectionResponse(byte[] response)
         {
             int action = BitConvertInt32(response, 0);
             int receiver_transaction_id = BitConvertInt32(response, 4);
             ConnectionID = BitConvertInt64(response, 8);
-            return action == (int)ACTIONS.Connect && receiver_transaction_id == TransactionID;
+            if (action != (int)ACTIONS.Connect || receiver_transaction_id != TransactionID) throw new WebException("Wrong connection response");
+            return;
         }
 
         /// <summary>
@@ -174,20 +166,15 @@ namespace TorrentDownloader
         /// Parse announce response and define peers
         /// </summary>
         /// <returns>true if response is correct</returns>
-        protected bool ProcessAnnounceResponse(byte[] response, TorrentTrackerInfo tracker_info)
+        protected void ProcessAnnounceResponse(byte[] response, TorrentTrackerInfo tracker_info)
         {
             int action = BitConvertInt32(response, 0);
-            if (action == (int)ACTIONS.Error)
-            {
-                String error_msg = Encoding.ASCII.GetString(response.Skip(8).ToArray());
-                LastError = error_msg;
-                return false;
-            }
+            if (action == (int)ACTIONS.Error) throw new WebException(Encoding.ASCII.GetString(response.Skip(8).ToArray()));
             int receiver_transaction_id = BitConvertInt32(response, 4);
             tracker_info.Interval = BitConvertInt32(response, 8);
             tracker_info.Stats["Leechers"] = BitConvertInt32(response, 12);
             tracker_info.Stats["Seeders"] = BitConvertInt32(response, 16);
-
+            /*Reading announce addresses*/
             int addresses_count = (response.Length - 20) / 6;
             String[] peers_addresses = new String[addresses_count];
             for (int i = 0; i < addresses_count; i++)
@@ -198,7 +185,7 @@ namespace TorrentDownloader
                 peers_addresses[i] = String.Format("{0}:{1}", ip, port);
             }
             tracker_info.PeersAddresses = peers_addresses.ToList();
-            return action == (int)ACTIONS.Announce && receiver_transaction_id == TransactionID;
+            if (action != (int)ACTIONS.Announce || receiver_transaction_id != TransactionID) throw new WebException("Wrong connection response");
         }
         
         /// <summary>
@@ -221,20 +208,16 @@ namespace TorrentDownloader
         /// Parse scrape response and define peers count
         /// </summary>
         /// <returns>true if response is correct</returns>
-        protected bool ProcessScrapeResponse(byte[] response, TorrentTrackerInfo tracker_info)
+        protected void ProcessScrapeResponse(byte[] response, TorrentTrackerInfo tracker_info)
         {
             int action = BitConvertInt32(response, 0);
-            if (action == (int)ACTIONS.Error)
-            {
-                String error_msg = Encoding.ASCII.GetString(response.Skip(8).ToArray());
-                LastError = error_msg;
-                return false;
-            }
+            if (action == (int)ACTIONS.Error) throw new WebException(Encoding.ASCII.GetString(response.Skip(8).ToArray()));
             int receiver_transaction_id = BitConvertInt32(response, 4);
             tracker_info.Stats["Complete"] = BitConvertInt32(response, 8);
             tracker_info.Stats["Downloaded"] = BitConvertInt32(response, 12);
             tracker_info.Stats["Incomplete"] = BitConvertInt32(response, 16);
-            return action == (int)ACTIONS.Scrape && receiver_transaction_id == TransactionID;
+            if (action != (int)ACTIONS.Scrape || receiver_transaction_id != TransactionID) throw new WebException("Wrong connection response");
+            return;
         }
 
         /// <summary>
@@ -285,13 +268,6 @@ namespace TorrentDownloader
         {
             msg.AddRange(value.Reverse().ToArray());
         }
-        
-        private static byte[] StringToByteArray(string hex)
-        {
-            return Enumerable.Range(0, hex.Length)
-                             .Where(x => x % 2 == 0)
-                             .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
-                             .ToArray();
-        }
+
     }
 }

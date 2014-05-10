@@ -20,27 +20,26 @@ namespace TorrentDownloader
         Torrent torrent;
         Client client;
 
+        static String[] columns_headers = new String[] { "Announce", "Status", "Timeout", "Seeders", "Leechers", "Complete", "Incomplete", "Downloaded" };
+        static int[] columns_widths = new int[] { 150, 100, 60, 60, 60, 60, 70, 70 };
+
         public MainForm()
         {
             InitializeComponent();
             dialogOpenTorrentFile.Filter = "Torrent files|*.torrent";
             client = new Client();
+            InitTrackersTable();
             return;
         }
 
         private void openTorrentFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            HideErrorMessage();
             if (dialogOpenTorrentFile.ShowDialog() == DialogResult.OK)
             {
                 torrent = new Torrent(dialogOpenTorrentFile.FileName);
-                client.CollectTorrentPeers(torrent);
                 listPeers.Items.Clear();
                 listPeers.Items.AddRange(torrent.PeersAddresses);
                 textParsedTorrentFIle.Text = torrent.ToYml();
-                listAnnounces.Items.Clear();
-                listAnnounces.Items.AddRange(torrent.Announces);
-                var hash = torrent.InfoHash;
             }
             return;
         }
@@ -49,93 +48,54 @@ namespace TorrentDownloader
         {
             this.Close();
         }
-        
-        protected void HideErrorMessage()
-        {
-            textAnnouncerInfo.Text = "";
-            return;
-        }
 
-        protected void ShowErrorMessage(String message)
+        private void InitTrackersTable()
         {
-            textAnnouncerInfo.Text = message;
-            return;
-        }
-
-        private void ConnectToPeer(String ip, int port)
-        {
-            try
+            int columns_count = columns_headers.Length; ;
+            tableTrackers.Rows.Clear();
+            tableTrackers.ColumnCount = columns_count;
+            tableTrackers.RowHeadersVisible = false;
+            for (int i = 0; i < columns_count; i++)
             {
-                TcpClient tcp_client = new TcpClient(ip, port);
-                var stream = tcp_client.GetStream();
-                List<byte> message = new List<byte>();
-                message.Add((byte)19);
-                message.AddRange(Encoding.UTF8.GetBytes("BitTorrent protocol"));
-                message.AddRange(new byte[8]);
-                message.AddRange(torrent.InfoHash.Reverse().ToArray());
-                message.AddRange(client.Id);
-                stream.Write(message.ToArray(), 0, message.Count);
-                byte[] buffer = new byte[128];
-                int result = stream.Read(buffer, 0, 128);
-                if (result > 68)
-                {
-                    int pstrlen = buffer[0];
-                    String protocol = Encoding.UTF8.GetString(buffer, 1, pstrlen);
-                    byte[] info_hash = buffer.Skip(28).Take(20).ToArray();
-                    byte[] peer_id = buffer.Skip(48).Take(20).ToArray();
-                    result = 0;
-                }
-                tcp_client.Close();
-            }
-            catch (SocketException ex)
-            {
-                ShowErrorMessage(ex.Message);
+                tableTrackers.Columns[i].HeaderText = columns_headers[i];
+                tableTrackers.Columns[i].Width = columns_widths[i];
             }
             return;
         }
 
-        private void ConnectAnnouncer(String announce_url)
+        private void ShowTrackerInfo(TorrentTrackerInfo tracker_info)
         {
-            String result;
-            TorrentTrackerInfo tracker_info;
-            if ((tracker_info = client.ConnectAnnouncer(torrent, announce_url, out result)) != null)
+            int row_index = tableTrackers.Rows.Add();
+            for (int i = 0; i < columns_headers.Length; i++)
             {
-                textAnnouncerInfo.Text = "";
-                foreach (var key_value in tracker_info.Stats)
-                {
-                    textAnnouncerInfo.Text += String.Format("{0}: {1}\n", key_value.Key, key_value.Value);
-                }
+                tableTrackers.Rows[row_index].Cells[i].Value = tracker_info[columns_headers[i]];
             }
-            else
-            {
-                ShowErrorMessage(result);
-            }           
             return;
-        }
-
-        private void listAnnounces_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            HideErrorMessage();
-            String uri = (String)listAnnounces.SelectedItem;
-            if (uri == "")
-            {
-                ShowErrorMessage("URI not determined");
-                return;
-            }
-            ConnectAnnouncer(uri);
         }
 
         private void buttonConnect_Click(object sender, EventArgs e)
         {
-            HideErrorMessage();
             String address = (String)listPeers.SelectedItem;
             if (address == "")
             {
-                ShowErrorMessage("URI not determined");
                 return;
             }
             PeerTcpProtocol peer = new PeerTcpProtocol(client);
             peer.Connect(torrent, address);
+            return;
+        }
+
+        private void buttonUpdateTrackersInfo_Click(object sender, EventArgs e)
+        {
+            if (torrent == null) return;
+            listPeers.Items.Clear();
+            listPeers.Items.AddRange(torrent.PeersAddresses);
+            client.CollectTorrentPeers(torrent);
+            tableTrackers.Rows.Clear();
+            foreach (var tracker_info in torrent.Announcers.Values)
+            {
+                ShowTrackerInfo(tracker_info);
+            }
             return;
         }
     }
