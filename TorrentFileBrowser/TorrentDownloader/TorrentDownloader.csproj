@@ -50,6 +50,8 @@
     <ApplicationIcon>download.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.VisualBasic" />
+    <Reference Include="Microsoft.VisualBasic.PowerPacks.Vs, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Web" />
@@ -63,24 +65,29 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BigEndian.cs" />
+    <Compile Include="BitField.cs" />
     <Compile Include="Client.cs" />
-    <Compile Include="File.cs" />
-    <Compile Include="MainForm.cs">
+    <Compile Include="Pool.cs" />
+    <Compile Include="TargetFile.cs" />
+    <Compile Include="FormMain.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="MainForm.Designer.cs">
-      <DependentUpon>MainForm.cs</DependentUpon>
+    <Compile Include="FormMain.Designer.cs">
+      <DependentUpon>FormMain.cs</DependentUpon>
     </Compile>
+    <Compile Include="PeerTcpMessages.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PeerTcpProtocol.cs" />
     <Compile Include="Torrent.cs" />
     <Compile Include="TorrentTrackerInfo.cs" />
     <Compile Include="TrackerHttpProtocol.cs" />
+    <Compile Include="TrackerUdpMessages.cs" />
     <Compile Include="TrackerUdpProtocol.cs" />
     <Compile Include="UriGenerator.cs" />
-    <EmbeddedResource Include="MainForm.resx">
-      <DependentUpon>MainForm.cs</DependentUpon>
+    <EmbeddedResource Include="FormMain.resx">
+      <DependentUpon>FormMain.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -114,6 +121,9 @@
   <ItemGroup>
     <Content Include="download.ico" />
     <Content Include="icon.ico" />
+    <None Include="Resources\stop-red-icon.png" />
+    <None Include="Resources\start-icon.png" />
+    <None Include="Resources\media_playback_start.png" />
     <None Include="Resources\icon.ico" />
     <None Include="Resources\Icon1.ico" />
   </ItemGroup>

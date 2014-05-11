@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace TorrentDownloader
 {
-    public class File
+    public class TargetFile
     {
         public long Size {get;set;}
         public String Path {get;set;}
 
-        public File(String path, long size)
+        public TargetFile(String path, long size)
         {
             Path = path;
             Size = size;

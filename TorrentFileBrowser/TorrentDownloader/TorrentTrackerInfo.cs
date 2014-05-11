@@ -32,7 +32,7 @@ namespace TorrentDownloader
                 switch (attribute)
                 {
                     case "Announce": return AnnounceUrl;
-                    case "Timeout": return Interval.ToString();
+                    case "Timeout": return Interval == 0 ? "" : Interval.ToString();
                     case "Status": return Status;
                     default: 
                         int value;

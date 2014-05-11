@@ -11,4 +11,4 @@ D:\Учеба\Курсовой проект\TorrentFileBrowser\TorrentDownloader
 D:\Учеба\Курсовой проект\bin\TorrentDownloader.exe.config
 D:\Учеба\Курсовой проект\bin\TorrentDownloader.exe
 D:\Учеба\Курсовой проект\bin\TorrentDownloader.pdb
-D:\Учеба\Курсовой проект\TorrentFileBrowser\TorrentDownloader\obj\Debug\TorrentDownloader.MainForm.resources
+D:\Учеба\Курсовой проект\TorrentFileBrowser\TorrentDownloader\obj\Debug\TorrentDownloader.FormMain.resources

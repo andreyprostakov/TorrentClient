@@ -17,11 +17,12 @@ namespace TorrentDownloader
         protected long ConnectionID;
         private Client Client;
 
-        public const long TORRENT_PROTOCOL_CODE = 0x41727101980;
         public enum ACTIONS: int {Connect = 0, Announce = 1, Scrape = 2, Error = 3}
         public enum EVENTS : int {None = 0, Completed = 1, Started = 2, Stopped = 3}
         protected String UDP_ADDRESS_PATTERN = @"udp://(.+):(\d{1,4})";
-        private const int TIMEOUT = 1000;
+        private const int SEND_TIMEOUT = 1000;
+        private const int RECEIVE_TIMEOUT = 3000;
+        private const int CONNECTION_RETRIES = 3;
 
 
         public TrackerUdpProtocol(Client client)
@@ -43,13 +44,16 @@ namespace TorrentDownloader
             {
                 UdpClient udp_client = CreateClient(address);
 
-                byte[] connection_response = SendRequest(udp_client, ConnectionRequest());
+                byte[] msg = TrackerUdpMessages.Connection(GenerateTransactionID());
+                byte[] connection_response = SendRequest(udp_client, msg);
                 ProcessConnectionResponse(connection_response);
 
-                byte[] scrape_response = SendRequest(udp_client, ScrapeRequest(torrent));
+                msg = TrackerUdpMessages.Scrape(GenerateTransactionID(), ConnectionID, torrent.InfoHash);
+                byte[] scrape_response = SendRequest(udp_client, msg, true);
                 ProcessScrapeResponse(scrape_response, tracker_info);
 
-                byte[] announce_response = SendRequest(udp_client, AnnounceRequest(torrent));
+                msg = TrackerUdpMessages.Announce(GenerateTransactionID(), ConnectionID, Client.Id, torrent.InfoHash);
+                byte[] announce_response = SendRequest(udp_client, msg, true);
                 ProcessAnnounceResponse(announce_response, tracker_info);
 
                 udp_client.Close();
@@ -71,12 +75,32 @@ namespace TorrentDownloader
         /// Send datagram using configured udp client
         /// </summary>
         /// <returns>received data or null</returns>
-        protected byte[] SendRequest(UdpClient udp_client, byte[] request_data)
+        protected byte[] SendRequest(UdpClient udp_client, byte[] request_data, bool reconnect_on_error = false)
         {
-            udp_client.Send(request_data, request_data.Length);
-            IPEndPoint endpoint = new IPEndPoint(IPAddress.Any, 0);
-            byte[] response = udp_client.Receive(ref endpoint);
-            return response;
+            for (int i = 0; ; i++)
+            {
+                byte[] response = null;
+                try
+                {
+                    udp_client.Send(request_data, request_data.Length);
+                    IPEndPoint endpoint = new IPEndPoint(IPAddress.Any, 0);
+                    response = udp_client.Receive(ref endpoint);
+                }
+                catch (SocketException ex)
+                {
+                    if (i < CONNECTION_RETRIES)
+                    {
+                        if (reconnect_on_error)
+                        {
+                            byte[] connection_response = SendRequest(udp_client, TrackerUdpMessages.Connection(GenerateTransactionID()));
+                            ProcessConnectionResponse(connection_response);
+                        }
+                        continue;
+                    }
+                    else throw ex;
+                }
+                return response;
+            }
         }
 
         /// <summary>
@@ -92,7 +116,8 @@ namespace TorrentDownloader
             UdpClient udp_client;
             udp_client = new UdpClient(0, AddressFamily.InterNetwork);
             udp_client.Connect(host_name, target_port);
-            udp_client.Client.ReceiveTimeout = TIMEOUT;
+            udp_client.Client.SendTimeout = SEND_TIMEOUT;
+            udp_client.Client.ReceiveTimeout = RECEIVE_TIMEOUT;
             return udp_client;
         }
 
@@ -110,21 +135,6 @@ namespace TorrentDownloader
         }
 
         /// <summary>
-        /// Torrent protocol message for creating a connection
-        /// </summary>
-        /// <returns>Message content</returns>
-        protected byte[] ConnectionRequest()
-        {
-            TransactionID = GenerateTransactionID();
-            List<byte> message_content = new List<byte>();
-            AppendMessage(message_content, (Int64)TORRENT_PROTOCOL_CODE);
-            AppendMessage(message_content, (Int32)ACTIONS.Connect);
-            AppendMessage(message_content, (Int32)TransactionID);
-            if (message_content.Count != 16) throw new FormatException("Wrong udp request");
-            return message_content.ToArray();
-        }
-
-        /// <summary>
         /// Parse connection response and define connection id
         /// </summary>
         /// <returns>true if response is correct</returns>
@@ -135,31 +145,6 @@ namespace TorrentDownloader
             ConnectionID = BitConvertInt64(response, 8);
             if (action != (int)ACTIONS.Connect || receiver_transaction_id != TransactionID) throw new WebException("Wrong connection response");
             return;
-        }
-
-        /// <summary>
-        /// Torrent protocol message for getting peers list
-        /// </summary>
-        /// <returns>Message content</returns>
-        protected byte[] AnnounceRequest(Torrent torrent)
-        {
-            TransactionID = GenerateTransactionID();
-            List<byte> message_content = new List<byte>();
-            AppendMessage(message_content, (Int64)ConnectionID); //8
-            AppendMessage(message_content, (Int32)ACTIONS.Announce); //4
-            AppendMessage(message_content, (Int32)TransactionID); //4
-            AppendMessage(message_content, torrent.InfoHash); // 20
-            AppendMessage(message_content, Client.Id); // 20
-            AppendMessage(message_content, (Int64)0); // downloaded
-            AppendMessage(message_content, (Int64)0); // left
-            AppendMessage(message_content, (Int64)0); // uploaded
-            AppendMessage(message_content, (Int32)EVENTS.None); // event
-            AppendMessage(message_content, (Int32)0); // IP (default)
-            AppendMessage(message_content, (Int32)0); // key ???
-            AppendMessage(message_content, (Int32)(-1)); // num_want (default)
-            AppendMessage(message_content, (Int16)0); // port
-            if (message_content.Count != 98) throw new FormatException("Wrong udp request");
-            return message_content.ToArray();
         }
 
         /// <summary>
@@ -189,22 +174,6 @@ namespace TorrentDownloader
         }
         
         /// <summary>
-        /// Torrent protocol message for getting peers count
-        /// </summary>
-        /// <returns>Message content</returns>
-        protected byte[] ScrapeRequest(Torrent torrent)
-        {
-            TransactionID = GenerateTransactionID();
-            List<byte> message_content = new List<byte>();
-            AppendMessage(message_content, (Int64)ConnectionID); //8
-            AppendMessage(message_content, (Int32)ACTIONS.Scrape); //4
-            AppendMessage(message_content, (Int32)TransactionID); //4
-            AppendMessage(message_content, torrent.InfoHash); // 20
-            if (message_content.Count != 36) throw new FormatException("Wrong udp request");
-            return message_content.ToArray();
-        }
-        
-        /// <summary>
         /// Parse scrape response and define peers count
         /// </summary>
         /// <returns>true if response is correct</returns>
@@ -224,10 +193,12 @@ namespace TorrentDownloader
         /// Identifies response for request
         /// </summary>
         /// <returns>ID</returns>
-        protected int GenerateTransactionID()
+        private int GenerateTransactionID()
         {
-            return (Int32)(new Random(3).Next());
+            TransactionID = (Int32)(new Random(3).Next());
+            return TransactionID;
         }
+
 
         //
         // Genesis and parsing of udp message (big endian)
@@ -250,23 +221,6 @@ namespace TorrentDownloader
             int bytes = 64 / 8;
             byte[] ordered_data = data.Skip(start_index).Take(bytes).Reverse().ToArray();
             return BitConverter.ToInt64(ordered_data, 0);
-        }
-
-        protected void AppendMessage(List<byte> msg, Int16 value)
-        {
-            msg.AddRange(BitConverter.GetBytes(value).Reverse().ToArray());
-        }
-        protected void AppendMessage(List<byte> msg, Int32 value)
-        {
-            msg.AddRange(BitConverter.GetBytes(value).Reverse().ToArray());
-        }
-        protected void AppendMessage(List<byte> msg, Int64 value)
-        {
-            msg.AddRange(BitConverter.GetBytes(value).Reverse().ToArray());
-        }
-        protected void AppendMessage(List<byte> msg, byte[] value)
-        {
-            msg.AddRange(value.Reverse().ToArray());
         }
 
     }

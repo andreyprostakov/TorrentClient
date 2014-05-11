@@ -16,8 +16,7 @@ namespace TorrentDownloader
         public byte[] Id { get; private set; }
         public IPAddress ip_listen;
         public int port_listen;
-
-        public static int FILE_CHUNK_SIZE = 16384;
+        public Threading.Pool Pool { get; private set; }
 
         public Client()
         {
@@ -34,7 +33,7 @@ namespace TorrentDownloader
             if (address.Contains("http://") || address.Contains("https://"))
             {
                 TrackerHttpProtocol tracker = new TrackerHttpProtocol(this);
-                return tracker.Connect(tracker_info.Torrent, address);
+                return tracker.Connect(tracker_info);
             }
             else if (address.Contains("udp://"))
             {
@@ -47,6 +46,11 @@ namespace TorrentDownloader
                 return false;
             }
         }
+        public void ConnectAnnouncer(Object tracker_info)
+        {
+            ConnectAnnouncer((TorrentTrackerInfo)tracker_info);
+            return;
+        }
 
         /// <summary>
         /// Update torrent peers info
@@ -54,12 +58,52 @@ namespace TorrentDownloader
         public void CollectTorrentPeers(Torrent torrent)
         {
             List<String> peers_addresses = new List<String>();
+            Pool = new Threading.Pool(Math.Min(torrent.Announcers.Count, 6));
             foreach (var announcer_info in torrent.Announcers.Values)
             {
-                if (ConnectAnnouncer(announcer_info)) peers_addresses.AddRange(announcer_info.PeersAddresses);
+                //ConnectAnnouncer(announcer_info);
+                Pool.AddRoutine(ConnectAnnouncer, (Object)announcer_info);
+            }
+            Pool.WaitForEveryone();
+            foreach (var announcer_info in torrent.Announcers.Values)
+            {
+                peers_addresses.AddRange(announcer_info.PeersAddresses);
             }
             peers_addresses.Sort();
             torrent.PeersAddresses = peers_addresses.Distinct().ToArray();
+            return;
+        }
+
+        public void StartDownloading(Torrent torrent)
+        {
+            Pool = new Threading.Pool(Math.Min(torrent.Announcers.Count, 7));
+            Pool.AddRoutine(DownloadingCycle, torrent);
+            return;
+        }
+
+        /// <summary>
+        /// Connect to peers and require torrent pieces
+        /// </summary>
+        protected void DownloadingCycle(Object parameter)
+        {
+            Torrent torrent = (Torrent)parameter;
+            for (int i = 0; i < torrent.PeersAddresses.Length; i = (i + 1) % torrent.PeersAddresses.Length)
+            {
+                if (Pool.TasksInQueue() < torrent.PeersAddresses.Length / 2)
+                {
+                    Pool.AddRoutine(StartDownloading, new Object[] { torrent, torrent.PeersAddresses[i] });
+                }
+            }
+            return;
+        }
+
+        protected void StartDownloading(Object parameter)
+        {
+            Object[] parameters = (Object[])parameter;
+            Torrent torrent = (Torrent)parameters[0];
+            String peer_address = (String)parameters[1];
+            PeerTcpProtocol peer = new PeerTcpProtocol(this);
+            peer.Connect(torrent, peer_address);
             return;
         }
 
