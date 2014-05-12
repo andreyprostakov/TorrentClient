@@ -11,6 +11,10 @@ namespace BDecoded
     {
         protected StreamReader reader;
 
+        /// <summary>
+        /// Decode data from stream
+        /// </summary>
+        /// <returns>Decoded element or list of elements</returns>
         public IBElement Decode(Stream bencoded_reader)
         {
             reader = new StreamReader(bencoded_reader, Encoding.ASCII);
@@ -32,11 +36,17 @@ namespace BDecoded
                 throw new FormatException();
         }
 
+        /// <summary>
+        /// Static 'Decode' analog
+        /// </summary>
         public static IBElement DecodeStream(Stream bencoded_reader)
         {
             return (new BEncodedDecoder()).Decode(bencoded_reader);
         }
 
+        /// <summary>
+        /// General reading cycle
+        /// </summary>
         protected IBElement ReadElement()
         {
             char cur_char = (char)reader.Read();
@@ -57,6 +67,10 @@ namespace BDecoded
             }
         }
 
+        /// <summary>
+        /// Parse stream to achieve number (represents text length)
+        /// </summary>
+        /// <param name="first_char">First digit in number (already read)</param>
         protected long ReadTextLength(char first_char)
         {
             String buffer = "" + first_char;

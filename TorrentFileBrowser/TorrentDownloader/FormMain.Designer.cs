@@ -45,15 +45,18 @@
             this.label4 = new System.Windows.Forms.Label();
             this.tableTrackers = new System.Windows.Forms.DataGridView();
             this.dialogDestinationFolder = new System.Windows.Forms.FolderBrowserDialog();
-            this.labelTorrentFileName = new System.Windows.Forms.Label();
             this.checkFiles = new System.Windows.Forms.CheckedListBox();
             this.label3 = new System.Windows.Forms.Label();
             this.buttonChangeDestination = new System.Windows.Forms.Button();
             this.textDestinationFolder = new System.Windows.Forms.TextBox();
             this.progressDownload = new System.Windows.Forms.ProgressBar();
             this.timerDownloadProgress = new System.Windows.Forms.Timer(this.components);
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.labelProgress = new System.Windows.Forms.Label();
+            this.textTorrentFileName = new System.Windows.Forms.TextBox();
             this.menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.tableTrackers)).BeginInit();
+            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // label2
@@ -168,19 +171,10 @@
             this.tableTrackers.BackgroundColor = System.Drawing.SystemColors.ButtonHighlight;
             this.tableTrackers.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.tableTrackers.EditMode = System.Windows.Forms.DataGridViewEditMode.EditProgrammatically;
-            this.tableTrackers.Location = new System.Drawing.Point(12, 274);
+            this.tableTrackers.Location = new System.Drawing.Point(12, 268);
             this.tableTrackers.Name = "tableTrackers";
-            this.tableTrackers.Size = new System.Drawing.Size(560, 137);
+            this.tableTrackers.Size = new System.Drawing.Size(380, 143);
             this.tableTrackers.TabIndex = 27;
-            // 
-            // labelTorrentFileName
-            // 
-            this.labelTorrentFileName.AutoSize = true;
-            this.labelTorrentFileName.Font = new System.Drawing.Font("MV Boli", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.labelTorrentFileName.Location = new System.Drawing.Point(78, 40);
-            this.labelTorrentFileName.Name = "labelTorrentFileName";
-            this.labelTorrentFileName.Size = new System.Drawing.Size(0, 14);
-            this.labelTorrentFileName.TabIndex = 28;
             // 
             // checkFiles
             // 
@@ -214,19 +208,53 @@
             // 
             // textDestinationFolder
             // 
-            this.textDestinationFolder.BackColor = System.Drawing.SystemColors.ButtonHighlight;
-            this.textDestinationFolder.Location = new System.Drawing.Point(108, 61);
+            this.textDestinationFolder.BackColor = System.Drawing.Color.Lavender;
+            this.textDestinationFolder.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.textDestinationFolder.Font = new System.Drawing.Font("Arial", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.textDestinationFolder.Location = new System.Drawing.Point(108, 65);
             this.textDestinationFolder.Name = "textDestinationFolder";
             this.textDestinationFolder.ReadOnly = true;
-            this.textDestinationFolder.Size = new System.Drawing.Size(250, 20);
+            this.textDestinationFolder.Size = new System.Drawing.Size(250, 13);
             this.textDestinationFolder.TabIndex = 34;
             // 
             // progressDownload
             // 
-            this.progressDownload.Location = new System.Drawing.Point(224, 237);
+            this.progressDownload.Location = new System.Drawing.Point(15, 22);
             this.progressDownload.Name = "progressDownload";
-            this.progressDownload.Size = new System.Drawing.Size(100, 23);
+            this.progressDownload.Size = new System.Drawing.Size(148, 23);
             this.progressDownload.TabIndex = 35;
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.BackColor = System.Drawing.Color.LightSteelBlue;
+            this.groupBox1.Controls.Add(this.labelProgress);
+            this.groupBox1.Controls.Add(this.progressDownload);
+            this.groupBox1.Location = new System.Drawing.Point(398, 252);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(178, 85);
+            this.groupBox1.TabIndex = 36;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Downloading status";
+            // 
+            // labelProgress
+            // 
+            this.labelProgress.AutoSize = true;
+            this.labelProgress.Location = new System.Drawing.Point(67, 48);
+            this.labelProgress.Name = "labelProgress";
+            this.labelProgress.Size = new System.Drawing.Size(0, 13);
+            this.labelProgress.TabIndex = 38;
+            this.labelProgress.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // textTorrentFileName
+            // 
+            this.textTorrentFileName.BackColor = System.Drawing.Color.Lavender;
+            this.textTorrentFileName.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.textTorrentFileName.Font = new System.Drawing.Font("Arial", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.textTorrentFileName.Location = new System.Drawing.Point(78, 40);
+            this.textTorrentFileName.Name = "textTorrentFileName";
+            this.textTorrentFileName.ReadOnly = true;
+            this.textTorrentFileName.Size = new System.Drawing.Size(310, 13);
+            this.textTorrentFileName.TabIndex = 37;
             // 
             // FormMain
             // 
@@ -234,12 +262,12 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.Lavender;
             this.ClientSize = new System.Drawing.Size(588, 427);
-            this.Controls.Add(this.progressDownload);
+            this.Controls.Add(this.textTorrentFileName);
+            this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.textDestinationFolder);
             this.Controls.Add(this.buttonChangeDestination);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.checkFiles);
-            this.Controls.Add(this.labelTorrentFileName);
             this.Controls.Add(this.tableTrackers);
             this.Controls.Add(this.listPeers);
             this.Controls.Add(this.label4);
@@ -254,6 +282,8 @@
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.tableTrackers)).EndInit();
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -274,7 +304,6 @@
         private System.Windows.Forms.FolderBrowserDialog dialogDestinationFolder;
         private System.Windows.Forms.ToolStripMenuItem startDownloadingToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem updateTrackingInfoToolStripMenuItem;
-        private System.Windows.Forms.Label labelTorrentFileName;
         private System.Windows.Forms.CheckedListBox checkFiles;
         private System.Windows.Forms.ToolStripMenuItem stopToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem aboutThisProgramToolStripMenuItem;
@@ -283,6 +312,9 @@
         private System.Windows.Forms.TextBox textDestinationFolder;
         private System.Windows.Forms.ProgressBar progressDownload;
         private System.Windows.Forms.Timer timerDownloadProgress;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.TextBox textTorrentFileName;
+        private System.Windows.Forms.Label labelProgress;
     }
 }
 

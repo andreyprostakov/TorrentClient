@@ -9,8 +9,12 @@ namespace BDecoded
 {
     public class OutputAsYml
     {
-        const String TAB_QUOTA = "   ";
+        private const String TAB_QUOTA = "   ";
 
+        /// <summary>
+        /// Get decoded data in yml format
+        /// </summary>
+        /// <param name="tab">Hierarchy tab length</param>
         public String Output(IBElement element, int tab = 0)
         {
             String tab_string = String.Join("", Enumerable.Repeat(TAB_QUOTA, tab).ToArray());

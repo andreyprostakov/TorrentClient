@@ -25,13 +25,7 @@ namespace TorrentDownloader
                 return Files.Sum(f => f.Size);
             }
         }
-        public String DownloadDirectory {
-            get
-            {
-                String dir_name = String.Format("download_{0}", MetaFileName.GetHashCode());
-                return Path.Combine(Directory.GetCurrentDirectory(), dir_name);
-            }
-        }
+        public String DownloadDirectory { get; private set; }
         public BitField Bitfield;
         public int PiecesCount
         {
@@ -46,6 +40,7 @@ namespace TorrentDownloader
                 return 1 - (float)Bitfield.MissingPieces().Length / PiecesCount;
             }
         }
+        private byte[][] pieces_hashes;
 
         private String temp_download_file
         {
@@ -77,7 +72,8 @@ namespace TorrentDownloader
             this.Meta = (BDictionary)parsed_torrent_file;
             CollectAnnounces();
             CollectFiles();
-            ComputeInfoHash(file_name);
+            CollectHashSums(file_name);
+            InitDownloadDirectory();
             this.Bitfield = new BitField(PiecesCount);
             UpdateDownloadSatus();
             this.Trackers = new Dictionary<string, TorrentTrackerInfo>();
@@ -91,8 +87,7 @@ namespace TorrentDownloader
         /// <returns>true if valid</returns>
         public bool SavePiece(byte[] piece_data, int index)
         {
-            byte[] checksum = SHA1.Create().ComputeHash(piece_data);
-            //byte[] true_checksum = PieceHash(index);
+            if (!CheckPieceHash(piece_data, index)) return false;
             try
             {
                 using (FileStream writer = new FileStream(temp_download_file, FileMode.Open))
@@ -103,7 +98,7 @@ namespace TorrentDownloader
                 Bitfield.Set(index);
                 Bitfield.SaveTo(info_download_file);
             }
-            catch (IOException ex)
+            catch (IOException)
             {
                 return false;
             }
@@ -158,7 +153,21 @@ namespace TorrentDownloader
             File.Delete(temp_download_file);
             return;
         }
-        
+
+        public void ChangeDownloadDirectory(String new_path)
+        {
+            DownloadDirectory = new_path;
+            TouchDownloadDirectory();
+            UpdateDownloadSatus();
+            return;
+        }
+
+        private void InitDownloadDirectory()
+        {
+            String dir_name = String.Format("download_{0}", MetaFileName.GetHashCode());
+            this.DownloadDirectory = Path.Combine(Directory.GetCurrentDirectory(), dir_name);
+        }
+
         protected bool TouchDownloadDirectory()
         {
             try
@@ -214,25 +223,63 @@ namespace TorrentDownloader
         }
 
         /// <summary>
-        /// info_hash is necessary for torrent protocol
+        /// Take hashsum if 'info' metafile section
         /// </summary>
         /// <param name="file_name">.torrent file name</param>
-        private void ComputeInfoHash(String file_name)
+        private void CollectHashSums(String file_name)
         {
             Stream stream_reader = new FileStream(file_name, FileMode.Open);
             byte[] content = new byte[stream_reader.Length];
             stream_reader.Read(content, 0, content.Length);
-            List<byte> dynamic_content = new List<byte>(content);
-            int index = 0;
-            for (int i = 6; i < content.Length; i++)
-            {
-                if (content[i] == (byte)'d' && content[i - 1] == (byte)'o' && content[i - 2] == (byte)'f' && content[i - 3] == (byte)'n')
-                    index = i;
-            }
-            dynamic_content = content.Skip(index).ToList();
-            dynamic_content.RemoveAt(dynamic_content.Count - 1);
-            InfoHash = SHA1.Create().ComputeHash(dynamic_content.ToArray()).Reverse().ToArray();
+            stream_reader.Close();
+            // Extracting info section content
+            byte[] info_content = ExtractBDictionaryElement(content, "4:info");
+            info_content = info_content.Take(info_content.Length - 1).ToArray();
+            ExtractPiecesHashes(info_content);
             return;            
+        }
+        private void ExtractPiecesHashes(byte[] info_content)
+        {
+            byte[] pieces_content = ExtractBDictionaryElement(info_content, "6:pieces");
+            int pieces_content_length = ((BDictionary)Meta["info"])["pieces"].ToString().Length;
+            for (int i = 0; i < pieces_content.Length; i++)
+                if (pieces_content[i] == (byte)':')
+                {
+                    pieces_content = pieces_content.Skip(i + 1).Take(pieces_content_length).ToArray();
+                    break;
+                }
+            if (pieces_content.Length != pieces_content_length || pieces_content.Length % 20 != 0) throw new FormatException("Wrong torrent file format");
+            this.pieces_hashes = new byte[PiecesCount][];
+            for (int i = 0; i < PiecesCount; i++)
+            {
+                pieces_hashes[i] = pieces_content.Skip(20 * i).Take(20).ToArray();
+            }
+            InfoHash = SHA1.Create().ComputeHash(info_content).Reverse().ToArray();
+            return;
+        }
+        private byte[] ExtractBDictionaryElement(byte[] source, String name)
+        {
+            int start_index = FindSequenceIndex(source, Encoding.UTF8.GetBytes(name));
+            if (start_index < 0) return null;
+            return source.Skip(start_index + name.Length).ToArray();
+        }
+        private int FindSequenceIndex(byte[] source, byte[] key)
+        {
+            for (int i = 0; i < source.Length - key.Length + 1; i++)
+            {
+                if (source[i] != key[0]) continue;
+                bool matches = true;
+                for (int j = 1; j < key.Length; j++)
+                {
+                    if (source[i + j] != key[j]) 
+                    {
+                        matches = false;
+                        break; 
+                    }
+                }
+                if (matches) return i;                
+            }
+            return -1;
         }
 
         /// <summary>
@@ -286,7 +333,7 @@ namespace TorrentDownloader
         }
 
         /// <summary>
-        /// Collect announces info into specified dictionary
+        /// Collect announces info from metafile into dictionary
         /// </summary>
         private void CollectAnnounces()
         {            
@@ -303,18 +350,14 @@ namespace TorrentDownloader
             return;
         }
 
-        /// <summary>
-        /// Checksum for specific peace
-        /// </summary>
-        /// <param name="index"></param>
-        /// <returns></returns>
-        private byte[] PieceHash(int index)
+        private bool CheckPieceHash(byte[] piece_content, int piece_index)
         {
-            String total_checksum = ((BDictionary)Meta["info"])["pieces"].ToString();
-            int start_checksum_index = index * PieceLength();
-            if (start_checksum_index + PieceLength() > total_checksum.Length) throw new FormatException("Checksum error");
-            String piece_checksum = total_checksum.Substring(start_checksum_index, PieceLength());
-            return Encoding.UTF8.GetBytes(piece_checksum);
+            byte[] checksum = SHA1.Create().ComputeHash(piece_content);
+            for (int i = 0; i < checksum.Length; i++)
+            {
+                if (checksum[i] != pieces_hashes[piece_index][i]) return false;
+            }
+            return true;
         }
 
     }

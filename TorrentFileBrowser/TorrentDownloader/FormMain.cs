@@ -20,8 +20,8 @@ namespace TorrentDownloader
         private Torrent torrent;
         private Client client;
 
-        static String[] TRACKERS_COLUMN_HEADERS = new String[] { "Announce", "Status", "Seeders", "Leechers", "Complete", "Incomplete", "Downloaded" };
-        static int[] TRACKERS_COLUMN_WIDTHS = new int[] { 150, 100, 60, 60, 60, 70, 70 };
+        static String[] TRACKERS_COLUMN_HEADERS = new String[] { "Announce", "Status", "Complete", "Incomplete" };
+        static int[] TRACKERS_COLUMN_WIDTHS = new int[] { 150, 97, 60, 70 };
 
         public FormMain()
         {
@@ -56,8 +56,11 @@ namespace TorrentDownloader
 
         private void UpdateDownloadProgress()
         {
-            int percents_progress = (int)(torrent.Completed * 100);
+            int pieces_total = torrent.PiecesCount;
+            int downloaded = pieces_total - torrent.Bitfield.MissingPieces().Length;
+            int percents_progress = downloaded * 100 / pieces_total;
             progressDownload.Value = percents_progress;
+            labelProgress.Text = String.Format("{0}/{1}", downloaded, pieces_total);
             return;
         }
 
@@ -72,7 +75,7 @@ namespace TorrentDownloader
 
         private void ShowTorrentFileInfo()
         {
-            labelTorrentFileName.Text = Path.GetFileName(torrent.MetaFileName);
+            textTorrentFileName.Text = Path.GetFileName(torrent.MetaFileName);
             textDestinationFolder.Text = torrent.DownloadDirectory;
             checkFiles.Items.Clear();
             checkFiles.Items.AddRange(torrent.Files.Select(f => FormattedFileInfo(f)).ToArray());
@@ -153,7 +156,9 @@ namespace TorrentDownloader
         {
             if (dialogDestinationFolder.ShowDialog() == DialogResult.OK)
             {
+                torrent.ChangeDownloadDirectory(dialogDestinationFolder.SelectedPath);
                 textDestinationFolder.Text = dialogDestinationFolder.SelectedPath;
+                UpdateDownloadProgress();
             }
             return;
         }
@@ -203,6 +208,7 @@ namespace TorrentDownloader
             startDownloadingToolStripMenuItem.Enabled = false;
             stopToolStripMenuItem.Enabled = true;
             updateTrackingInfoToolStripMenuItem.Enabled = false;
+            buttonChangeDestination.Enabled = false;
             timerDownloadProgress.Start();
             openTorrentFileToolStripMenuItem.Enabled = false;
             return;
@@ -214,6 +220,7 @@ namespace TorrentDownloader
             stopToolStripMenuItem.Enabled = false;
             startDownloadingToolStripMenuItem.Enabled = true;
             timerDownloadProgress.Stop();
+            buttonChangeDestination.Enabled = true;
             updateTrackingInfoToolStripMenuItem.Enabled = true;
             openTorrentFileToolStripMenuItem.Enabled = true;
             return;

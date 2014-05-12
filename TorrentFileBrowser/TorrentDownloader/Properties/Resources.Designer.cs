@@ -73,16 +73,6 @@ namespace TorrentDownloader.Properties {
         /// <summary>
         ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap media_playback_start {
-            get {
-                object obj = ResourceManager.GetObject("media_playback_start", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
-        /// </summary>
         internal static System.Drawing.Bitmap start_icon {
             get {
                 object obj = ResourceManager.GetObject("start-icon", resourceCulture);

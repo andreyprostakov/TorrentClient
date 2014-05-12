@@ -47,7 +47,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>download.ico</ApplicationIcon>
+    <ApplicationIcon>Resources\download.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualBasic" />
@@ -69,6 +69,11 @@
     <Compile Include="BitField.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="Pool.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
     <Compile Include="TargetFile.cs" />
     <Compile Include="FormMain.cs">
       <SubType>Form</SubType>
@@ -91,14 +96,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-      <DesignTime>True</DesignTime>
-    </Compile>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -119,13 +119,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="download.ico" />
-    <Content Include="icon.ico" />
+    <Content Include="Resources\download.ico" />
+    <Content Include="Resources\icon.ico" />
     <None Include="Resources\stop-red-icon.png" />
     <None Include="Resources\start-icon.png" />
-    <None Include="Resources\media_playback_start.png" />
-    <None Include="Resources\icon.ico" />
-    <None Include="Resources\Icon1.ico" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5">
