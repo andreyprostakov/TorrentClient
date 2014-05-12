@@ -37,18 +37,41 @@ namespace TorrentDownloader
             return;
         }
 
+        /// <summary>
+        /// Draw table for displaying trackers
+        /// </summary>
+        private void InitTrackersTable()
+        {
+            int columns_count = TRACKERS_COLUMN_HEADERS.Length; ;
+            tableTrackers.Rows.Clear();
+            tableTrackers.ColumnCount = columns_count;
+            tableTrackers.RowHeadersVisible = false;
+            for (int i = 0; i < columns_count; i++)
+            {
+                tableTrackers.Columns[i].HeaderText = TRACKERS_COLUMN_HEADERS[i];
+                tableTrackers.Columns[i].Width = TRACKERS_COLUMN_WIDTHS[i];
+            }
+            return;
+        }
+
+        /// <summary>
+        /// Initialize timer for updating progress info
+        /// </summary>
         private void PrepareTimer()
         {
-            timerDownloadProgress.Tick += new EventHandler(UpdateDownloadProgress);
+            timerDownloadProgress.Tick += new EventHandler(UpdateCurrentProgressRoutine);
             timerDownloadProgress.Interval = 1000;
             return;
         }
 
-        private void UpdateDownloadProgress(Object sender, EventArgs e)
+        /// <summary>
+        /// Timer routine for updating GUI markers while downloading
+        /// </summary>
+        private void UpdateCurrentProgressRoutine(Object sender, EventArgs e)
         {
             lock (torrent)
             {
-                UpdateDownloadProgress();
+                UpdateProgressBar();
                 if (torrent.Completed == 1.0)
                 {
                     OnStopDownloading();
@@ -58,7 +81,7 @@ namespace TorrentDownloader
             return;
         }
 
-        private void UpdateDownloadProgress()
+        private void UpdateProgressBar()
         {
             int pieces_total = torrent.PiecesCount;
             int downloaded = pieces_total - torrent.Bitfield.MissingPieces().Length;
@@ -68,6 +91,10 @@ namespace TorrentDownloader
             return;
         }
 
+
+        /// <summary>
+        /// Dialog for opening .torrent file
+        /// </summary>
         private void openTorrentFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (dialogOpenTorrentFile.ShowDialog() == DialogResult.OK)
@@ -83,20 +110,31 @@ namespace TorrentDownloader
             return;
         }
 
+        /// <summary>
+        /// Display basic metafile info
+        /// </summary>
         private void ShowTorrentFileInfo()
         {
+            textTargetFileSize.Text = FormattedFileSize(torrent.Size);
             textDestinationFolder.Text = torrent.DownloadDirectory;
+            dialogDestinationFolder.SelectedPath = torrent.DownloadDirectory;
             listFiles.Items.Clear();
             listFiles.Items.AddRange(torrent.Files.Select(f => FormattedFileInfo(f)).ToArray());
             return;
         }
 
+        /// <summary>
+        /// Get target file formatted for list view
+        /// </summary>
         private String FormattedFileInfo(TargetFile file)
         {
             String name = Path.GetFileName(file.Path);
             return String.Format("{0} ({1})", name, FormattedFileSize(file.Size));
         }
 
+        /// <summary>
+        /// Get formatted file size (with measures)
+        /// </summary>
         private String FormattedFileSize(long size)
         {
             String size_formatted = "0";
@@ -114,35 +152,18 @@ namespace TorrentDownloader
             return size_formatted;
         }
 
+
+        /// <summary>
+        /// EXIT action
+        /// </summary>
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
             this.Close();
         }
 
-        private void InitTrackersTable()
-        {
-            int columns_count = TRACKERS_COLUMN_HEADERS.Length; ;
-            tableTrackers.Rows.Clear();
-            tableTrackers.ColumnCount = columns_count;
-            tableTrackers.RowHeadersVisible = false;
-            for (int i = 0; i < columns_count; i++)
-            {
-                tableTrackers.Columns[i].HeaderText = TRACKERS_COLUMN_HEADERS[i];
-                tableTrackers.Columns[i].Width = TRACKERS_COLUMN_WIDTHS[i];
-            }
-            return;
-        }
-
-        private void ShowTrackerInfo(TorrentTrackerInfo tracker_info)
-        {
-            int row_index = tableTrackers.Rows.Add();
-            for (int i = 0; i < TRACKERS_COLUMN_HEADERS.Length; i++)
-            {
-                tableTrackers.Rows[row_index].Cells[i].Value = tracker_info[TRACKERS_COLUMN_HEADERS[i]];
-            }
-            return;
-        }
-
+        /// <summary>
+        /// START DOWNLOADING action
+        /// </summary>
         private void startDownloadingToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (torrent == null) return;
@@ -153,6 +174,9 @@ namespace TorrentDownloader
             return;
         }
 
+        /// <summary>
+        /// UPDATE PEERS LIST action
+        /// </summary>
         private void updateTrackingInfoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (torrent == null) return;
@@ -160,44 +184,55 @@ namespace TorrentDownloader
             return;
         }
 
+        /// <summary>
+        /// ABOUT message
+        /// </summary>
         private void aboutThisProgramToolStripMenuItem_Click(object sender, EventArgs e)
         {
             MessageBox.Show("Tracker downloader\n Written by Andrew Prostakov, 2014");
             return;
         }
 
+        /// <summary>
+        /// CHANGE DESTINATION action
+        /// </summary>
         private void buttonChangeDestination_Click(object sender, EventArgs e)
         {
             if (dialogDestinationFolder.ShowDialog() == DialogResult.OK)
             {
                 torrent.ChangeDownloadDirectory(dialogDestinationFolder.SelectedPath);
                 textDestinationFolder.Text = dialogDestinationFolder.SelectedPath;
-                UpdateDownloadProgress();
+                UpdateProgressBar();
             }
             return;
         }
 
+        /// <summary>
+        /// STOP DOWNLOADING ACTION
+        /// </summary>
         private void stopToolStripMenuItem_Click(object sender, EventArgs e)
         {
             OnStopDownloading();
             return;
         }
 
+        //
+        // Complex logic & GUI behaviour
+        //
+
         private void OnNewTorrentFile(String metafile_name)
         {
-            torrent = new Torrent(metafile_name);
             textTorrentFileName.Text = Path.GetFileName(metafile_name);
-            textTargetFileSize.Text = FormattedFileSize(torrent.Size);
+            torrent = new Torrent(metafile_name);
             listPeers.Items.Clear();
             listPeers.Items.AddRange(torrent.PeersAddresses);
             tableTrackers.Rows.Clear();
-            dialogDestinationFolder.SelectedPath = torrent.DownloadDirectory;
             buttonChangeDestination.Enabled = true;
             updateTrackingInfoToolStripMenuItem.Enabled = true;
             startDownloadingToolStripMenuItem.Enabled = false;
             stopToolStripMenuItem.Enabled = false;
             ShowTorrentFileInfo();
-            UpdateDownloadProgress();
+            UpdateProgressBar();
             return;
         }
 
@@ -215,6 +250,19 @@ namespace TorrentDownloader
                 }
                 startDownloadingToolStripMenuItem.Enabled = true;
                 stopToolStripMenuItem.Enabled = false;
+            }
+            return;
+        }
+
+        /// <summary>
+        /// Show new tracker in table
+        /// </summary>
+        private void ShowTrackerInfo(TorrentTrackerInfo tracker_info)
+        {
+            int row_index = tableTrackers.Rows.Add();
+            for (int i = 0; i < TRACKERS_COLUMN_HEADERS.Length; i++)
+            {
+                tableTrackers.Rows[row_index].Cells[i].Value = tracker_info[TRACKERS_COLUMN_HEADERS[i]];
             }
             return;
         }
