@@ -12,7 +12,7 @@ namespace TorrentDownloader
     public class PeerTcpProtocol
     {
         public String LastError { get; private set; }
-        private Client client;
+        private byte[] client_id;
         private TcpClient tcp_client;
         private byte[] partner_id;
         private Torrent torrent;
@@ -27,9 +27,9 @@ namespace TorrentDownloader
         private static int PACKAGE_DEFAULT_SIZE = 1024;
         private static Random random = new Random((int)DateTime.Now.Ticks);
 
-        public PeerTcpProtocol(Client client)
+        public PeerTcpProtocol(byte[] client_id)
         {
-            this.client = client;
+            this.client_id = client_id;
             this.current_piece = new List<byte>();
             return;
         }
@@ -94,7 +94,7 @@ namespace TorrentDownloader
         protected void Handshake()
         {
             var stream = tcp_client.GetStream();            
-            byte[] message = PeerTcpMessages.HandShake(torrent.InfoHash, client.Id);
+            byte[] message = PeerTcpMessages.HandShake(torrent.InfoHash, client_id);
             stream.Write(message, 0, message.Length);
             byte[] response = new byte[68];
             tcp_client.Client.ReceiveTimeout = 10000;

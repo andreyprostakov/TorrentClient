@@ -65,32 +65,31 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BigEndian.cs" />
-    <Compile Include="BitField.cs" />
+    <Compile Include="BTProtocol\BigEndian.cs" />
+    <Compile Include="BTProtocol\BitField.cs" />
     <Compile Include="Client.cs" />
-    <Compile Include="Pool.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="TargetFile.cs" />
+    <Compile Include="BTProtocol\TargetFile.cs" />
     <Compile Include="FormMain.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="FormMain.Designer.cs">
       <DependentUpon>FormMain.cs</DependentUpon>
     </Compile>
-    <Compile Include="PeerTcpMessages.cs" />
+    <Compile Include="BTProtocol\Peer\PeerTcpMessages.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="PeerTcpProtocol.cs" />
-    <Compile Include="Torrent.cs" />
-    <Compile Include="TorrentTrackerInfo.cs" />
-    <Compile Include="TrackerHttpProtocol.cs" />
-    <Compile Include="TrackerUdpMessages.cs" />
-    <Compile Include="TrackerUdpProtocol.cs" />
-    <Compile Include="UriGenerator.cs" />
+    <Compile Include="BTProtocol\Peer\PeerTcpProtocol.cs" />
+    <Compile Include="BTProtocol\Torrent.cs" />
+    <Compile Include="BTProtocol\Tracker\TorrentTrackerInfo.cs" />
+    <Compile Include="BTProtocol\Tracker\TrackerHttpProtocol.cs" />
+    <Compile Include="BTProtocol\Tracker\TrackerUdpMessages.cs" />
+    <Compile Include="BTProtocol\Tracker\TrackerUdpProtocol.cs" />
+    <Compile Include="BTProtocol\UriGenerator.cs" />
     <EmbeddedResource Include="FormMain.resx">
       <DependentUpon>FormMain.cs</DependentUpon>
     </EmbeddedResource>
@@ -117,6 +116,10 @@
       <Project>{9f9d2018-fb34-416e-b058-0d851cd46c57}</Project>
       <Name>BDecoded</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\ThreadsPool\ThreadsPool.csproj">
+      <Project>{b584292c-f1b6-4ca3-afdc-47b1117a981a}</Project>
+      <Name>ThreadsPool</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\download.ico" />
@@ -141,6 +144,7 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

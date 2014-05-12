@@ -15,57 +15,27 @@ namespace TorrentDownloader
     public class Client
     {
         public byte[] Id { get; private set; }
-        public IPAddress ip_listen;
         public int port_listen;
         public Threading.Pool Pool { get; private set; }
 
         public Client()
         {
             Id = GenerateId();
-            ip_listen = IPAddress.Any;
             port_listen = DefinePort();
             return;
         }
-
-        public bool ConnectAnnouncer(TorrentTrackerInfo tracker_info)
-        {
-            String address = tracker_info.AnnounceUrl;
-            if (String.IsNullOrEmpty(tracker_info.AnnounceUrl)) throw new FormatException("Wrong address");
-            if (address.Contains("http://") || address.Contains("https://"))
-            {
-                TrackerHttpProtocol tracker = new TrackerHttpProtocol(this);
-                return tracker.Connect(tracker_info);
-            }
-            else if (address.Contains("udp://"))
-            {
-                TrackerUdpProtocol tracker = new TrackerUdpProtocol(this);
-                return tracker.ConnectUDP(tracker_info);
-            }
-            else
-            {
-                tracker_info.Status = "Wrong announce address given";
-                return false;
-            }
-        }
-        public void ConnectAnnouncer(Object tracker_info)
-        {
-            ConnectAnnouncer((TorrentTrackerInfo)tracker_info);
-            return;
-        }
+        
+        //
+        // Connecting to trackers
+        //
 
         /// <summary>
         /// Update torrent peers info
         /// </summary>
         public void CollectTorrentPeers(Torrent torrent)
         {
+            ConnectToTrackers(torrent.Announcers.Values.ToArray());
             List<String> peers_addresses = new List<String>();
-            Pool = new Threading.Pool(Math.Min(torrent.Announcers.Count, 6));
-            foreach (var announcer_info in torrent.Announcers.Values)
-            {
-                //ConnectAnnouncer(announcer_info);
-                Pool.AddRoutine(ConnectAnnouncer, (Object)announcer_info);
-            }
-            Pool.WaitForEveryone();
             foreach (var announcer_info in torrent.Announcers.Values)
             {
                 peers_addresses.AddRange(announcer_info.PeersAddresses);
@@ -75,6 +45,55 @@ namespace TorrentDownloader
             return;
         }
 
+        /// <summary>
+        /// Question all trackers and wait for responses
+        /// </summary>
+        /// <param name="trackers"></param>
+        protected void ConnectToTrackers(TorrentTrackerInfo[] trackers)
+        {
+            Pool = new Threading.Pool(Math.Min(trackers.Length, 6));
+            foreach (var announcer_info in trackers)
+            {
+                Pool.AddRoutine(ConnectToTrackerRoutine, (Object)announcer_info);
+            }
+            Pool.WaitForEveryone();
+            return;
+        }
+
+        /// <summary>
+        /// Worker routine connecting to tracker by address
+        /// </summary>
+        /// <param name="parameter">Server host address</param>
+        protected void ConnectToTrackerRoutine(Object parameter)
+        {
+            TorrentTrackerInfo tracker_info = (TorrentTrackerInfo)parameter;
+            String address = tracker_info.AnnounceUrl;
+            if (String.IsNullOrEmpty(tracker_info.AnnounceUrl)) throw new FormatException("Wrong address");
+            if (address.Contains("http://") || address.Contains("https://"))
+            {
+                TrackerHttpProtocol tracker = new TrackerHttpProtocol(this.Id, this.port_listen);
+                tracker.Connect(tracker_info);
+            }
+            else if (address.Contains("udp://"))
+            {
+                TrackerUdpProtocol tracker = new TrackerUdpProtocol(this.Id);
+                tracker.ConnectUDP(tracker_info);
+            }
+            else
+            {
+                tracker_info.Status = "Wrong announce address given";
+            }
+            return;
+        }
+
+        //
+        // Connecting to other peers
+        //
+
+        /// <summary>
+        /// Initiate downloading routine and return
+        /// </summary>
+        /// <returns>true if downloading is acceptable</returns>
         public bool StartDownloading(Torrent torrent)
         {
             if (torrent.PrepareForDownload())
@@ -83,14 +102,11 @@ namespace TorrentDownloader
                 Pool.AddRoutine(DownloadingCycle, torrent);
                 return true;
             }
-            else
-            {
-                return false;
-            }
+            return false;
         }
-
+        
         /// <summary>
-        /// Connect to peers and require torrent pieces
+        /// Managing download connection tasks to keep the process non-stop
         /// </summary>
         protected void DownloadingCycle(Object parameter)
         {
@@ -99,21 +115,26 @@ namespace TorrentDownloader
             {
                 if (Pool.TasksInQueue() < torrent.PeersAddresses.Length / 2)
                 {
-                    Pool.AddRoutine(StartDownloading, new Object[] { torrent, torrent.PeersAddresses[i] });
+                    Pool.AddRoutine(StartDownloadingRoutine, new Object[] { torrent, torrent.PeersAddresses[i] });
                 }
             }
             return;
         }
 
-        protected void StartDownloading(Object parameter)
+        /// <summary>
+        /// Worker routine connecting to peer
+        /// </summary>
+        /// <param name="parameter">array containing a torrent and peer address</param>
+        protected void StartDownloadingRoutine(Object parameter)
         {
             Object[] parameters = (Object[])parameter;
             Torrent torrent = (Torrent)parameters[0];
             String peer_address = (String)parameters[1];
-            PeerTcpProtocol peer = new PeerTcpProtocol(this);
+            PeerTcpProtocol peer = new PeerTcpProtocol(this.Id);
             peer.Connect(torrent, peer_address);
             return;
         }
+
 
         /// <summary>
         /// Generate self peer_id as random

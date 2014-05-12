@@ -13,9 +13,9 @@ namespace TorrentDownloader
     public class TrackerUdpProtocol
     {
         public String LastError { get; private set; }
-        protected int TransactionID;
-        protected long ConnectionID;
-        private Client Client;
+        protected int transactionID;
+        protected long connectionID;
+        private byte[] client_id;
 
         public enum ACTIONS: int {Connect = 0, Announce = 1, Scrape = 2, Error = 3}
         public enum EVENTS : int {None = 0, Completed = 1, Started = 2, Stopped = 3}
@@ -25,9 +25,9 @@ namespace TorrentDownloader
         private const int CONNECTION_RETRIES = 3;
 
 
-        public TrackerUdpProtocol(Client client)
+        public TrackerUdpProtocol(byte[] client_id)
         {
-            this.Client = client;
+            this.client_id = client_id;
             return;
         }
 
@@ -48,11 +48,11 @@ namespace TorrentDownloader
                 byte[] connection_response = SendRequest(udp_client, msg);
                 ProcessConnectionResponse(connection_response);
 
-                msg = TrackerUdpMessages.Scrape(GenerateTransactionID(), ConnectionID, torrent.InfoHash);
+                msg = TrackerUdpMessages.Scrape(GenerateTransactionID(), this.connectionID, torrent.InfoHash);
                 byte[] scrape_response = SendRequest(udp_client, msg, true);
                 ProcessScrapeResponse(scrape_response, tracker_info);
 
-                msg = TrackerUdpMessages.Announce(GenerateTransactionID(), ConnectionID, Client.Id, torrent.InfoHash);
+                msg = TrackerUdpMessages.Announce(GenerateTransactionID(),this.connectionID, client_id, torrent.InfoHash);
                 byte[] announce_response = SendRequest(udp_client, msg, true);
                 ProcessAnnounceResponse(announce_response, tracker_info);
 
@@ -142,8 +142,8 @@ namespace TorrentDownloader
         {
             int action = BitConvertInt32(response, 0);
             int receiver_transaction_id = BitConvertInt32(response, 4);
-            ConnectionID = BitConvertInt64(response, 8);
-            if (action != (int)ACTIONS.Connect || receiver_transaction_id != TransactionID) throw new WebException("Wrong connection response");
+            this.connectionID = BitConvertInt64(response, 8);
+            if (action != (int)ACTIONS.Connect || receiver_transaction_id != this.transactionID) throw new WebException("Wrong connection response");
             return;
         }
 
@@ -170,7 +170,7 @@ namespace TorrentDownloader
                 peers_addresses[i] = String.Format("{0}:{1}", ip, port);
             }
             tracker_info.PeersAddresses = peers_addresses.ToList();
-            if (action != (int)ACTIONS.Announce || receiver_transaction_id != TransactionID) throw new WebException("Wrong connection response");
+            if (action != (int)ACTIONS.Announce || receiver_transaction_id != this.transactionID) throw new WebException("Wrong connection response");
         }
         
         /// <summary>
@@ -185,7 +185,7 @@ namespace TorrentDownloader
             tracker_info.Stats["Complete"] = BitConvertInt32(response, 8);
             tracker_info.Stats["Downloaded"] = BitConvertInt32(response, 12);
             tracker_info.Stats["Incomplete"] = BitConvertInt32(response, 16);
-            if (action != (int)ACTIONS.Scrape || receiver_transaction_id != TransactionID) throw new WebException("Wrong connection response");
+            if (action != (int)ACTIONS.Scrape || receiver_transaction_id != this.transactionID) throw new WebException("Wrong connection response");
             return;
         }
 
@@ -195,8 +195,8 @@ namespace TorrentDownloader
         /// <returns>ID</returns>
         private int GenerateTransactionID()
         {
-            TransactionID = (Int32)(new Random(3).Next());
-            return TransactionID;
+            this.transactionID = (Int32)(new Random(3).Next());
+            return this.transactionID;
         }
 
 

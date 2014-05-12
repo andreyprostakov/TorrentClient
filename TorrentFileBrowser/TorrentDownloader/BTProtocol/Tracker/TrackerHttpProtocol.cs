@@ -12,17 +12,17 @@ namespace TorrentDownloader
 {
     public class TrackerHttpProtocol
     {
-        private Client client;
+        private byte[] client_id;
         private int port;
         private TorrentTrackerInfo tracker_info;
 
         private static int TIMEOUT = 3000;
 
 
-        public TrackerHttpProtocol(Client client)
+        public TrackerHttpProtocol(byte[] client_id, int port)
         {
-            this.client = client;
-            this.port = client.port_listen;
+            this.client_id = client_id;
+            this.port = port;
             return;
         }
 
@@ -39,7 +39,7 @@ namespace TorrentDownloader
         {
             UriGenerator uri_gen = new UriGenerator(announce_url);
             uri_gen.AddParameter("info_hash", tracker_info.Torrent.InfoHash);
-            uri_gen.AddParameter("peer_id", client.Id);
+            uri_gen.AddParameter("peer_id", client_id);
             uri_gen.AddParameter("left", tracker_info.Torrent.Size);
             uri_gen.AddParameter("port", port);
             uri_gen.AddParameter("uploaded", 0);

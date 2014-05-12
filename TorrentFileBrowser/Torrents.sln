@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BDecoded", "..\BDecoded\BDe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TorrentDownloader", "TorrentDownloader\TorrentDownloader.csproj", "{315563C0-4D1F-417C-8AF5-608A0915907C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThreadsPool", "..\ThreadsPool\ThreadsPool.csproj", "{B584292C-F1B6-4CA3-AFDC-47B1117A981A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,6 +49,16 @@ Global
 		{315563C0-4D1F-417C-8AF5-608A0915907C}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{315563C0-4D1F-417C-8AF5-608A0915907C}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{315563C0-4D1F-417C-8AF5-608A0915907C}.Release|x86.ActiveCfg = Release|Any CPU
+		{B584292C-F1B6-4CA3-AFDC-47B1117A981A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B584292C-F1B6-4CA3-AFDC-47B1117A981A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B584292C-F1B6-4CA3-AFDC-47B1117A981A}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{B584292C-F1B6-4CA3-AFDC-47B1117A981A}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{B584292C-F1B6-4CA3-AFDC-47B1117A981A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B584292C-F1B6-4CA3-AFDC-47B1117A981A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B584292C-F1B6-4CA3-AFDC-47B1117A981A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B584292C-F1B6-4CA3-AFDC-47B1117A981A}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{B584292C-F1B6-4CA3-AFDC-47B1117A981A}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{B584292C-F1B6-4CA3-AFDC-47B1117A981A}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
