@@ -26,7 +26,7 @@ namespace TorrentFileBrowser
         public Form1()
         {
             InitializeComponent();
-            //dialogOpenTorrentFile.Filter = "Torrent files|*.torrent";
+            dialogOpenTorrentFile.Filter = "Torrent files|*.torrent";
             dialogSaveTorrentFile.Filter = "Torrent files|*.torrent";
             return;
         }
@@ -110,7 +110,7 @@ namespace TorrentFileBrowser
             return;
         }
 
-        private void compareFilesToolStripMenuItem_Click1(object sender, EventArgs e)
+        private void compareFilesToolStripMenuItem_Click(object sender, EventArgs e)
         {
             dialogOpenTorrentFile.Multiselect = true;
             if (dialogOpenTorrentFile.ShowDialog() == DialogResult.OK && dialogOpenTorrentFile.FileNames.Count() > 1)
@@ -137,28 +137,5 @@ namespace TorrentFileBrowser
             }
         }
 
-        private void compareFilesToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            dialogOpenTorrentFile.Multiselect = true;
-            if (dialogOpenTorrentFile.ShowDialog() == DialogResult.OK && dialogOpenTorrentFile.FileNames.Count() == 2)
-            {
-                var reader1 = new FileStream(dialogOpenTorrentFile.FileNames[0], FileMode.Open);
-                var reader2 = new FileStream(dialogOpenTorrentFile.FileNames[1], FileMode.Open);
-                int i=-1;
-                while (i < reader1.Length && i < reader2.Length)
-                {
-                    i++;
-                    int b1 = reader1.ReadByte();
-                    int b2 = reader2.ReadByte();
-                    if (b1 != b2)
-                        continue;
-                    else
-                        continue;
-                }
-                reader1.Close();
-                reader2.Close();
-            }
-            return;
-        }
     }
 }
