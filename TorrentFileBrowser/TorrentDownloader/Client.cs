@@ -9,6 +9,9 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using BitTorrentProtocol;
+using BitTorrentProtocol.Tracker;
+using BitTorrentProtocol.Peer;
 
 namespace TorrentDownloader
 {

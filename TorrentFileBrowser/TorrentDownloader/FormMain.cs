@@ -12,6 +12,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using System.Windows.Forms;
+using BitTorrentProtocol;
+using BitTorrentProtocol.Tracker;
 
 namespace TorrentDownloader
 {
@@ -20,8 +22,10 @@ namespace TorrentDownloader
         private Torrent torrent;
         private Client client;
 
-        static String[] TRACKERS_COLUMN_HEADERS = new String[] { "Announce", "Status", "Complete", "Incomplete" };
-        static int[] TRACKERS_COLUMN_WIDTHS = new int[] { 150, 97, 60, 70 };
+        private String[] TRACKERS_COLUMN_HEADERS = new String[] { "Announce", "Status", "Complete", "Incomplete" };
+        private int[] TRACKERS_COLUMN_WIDTHS = new int[] { 150, 97, 60, 70 };
+        private const int FILE_SIZE_LIMIT = 128000;
+
 
         public FormMain()
         {
@@ -68,7 +72,13 @@ namespace TorrentDownloader
         {
             if (dialogOpenTorrentFile.ShowDialog() == DialogResult.OK)
             {
-                OnNewTorrentFile();
+                if (new FileInfo(dialogOpenTorrentFile.FileName).Length > FILE_SIZE_LIMIT)
+                {
+                    String message = String.Format("Sorry, selected file is too large. Try somethind less than {0}.", FormattedFileSize(FILE_SIZE_LIMIT));
+                    MessageBox.Show(message);
+                    return;
+                }
+                OnNewTorrentFile(dialogOpenTorrentFile.FileName);
             }
             return;
         }
@@ -76,27 +86,32 @@ namespace TorrentDownloader
         private void ShowTorrentFileInfo()
         {
             textDestinationFolder.Text = torrent.DownloadDirectory;
-            checkFiles.Items.Clear();
-            checkFiles.Items.AddRange(torrent.Files.Select(f => FormattedFileInfo(f)).ToArray());
+            listFiles.Items.Clear();
+            listFiles.Items.AddRange(torrent.Files.Select(f => FormattedFileInfo(f)).ToArray());
             return;
         }
 
         private String FormattedFileInfo(TargetFile file)
         {
             String name = Path.GetFileName(file.Path);
+            return String.Format("{0} ({1})", name, FormattedFileSize(file.Size));
+        }
+
+        private String FormattedFileSize(long size)
+        {
             String size_formatted = "0";
-            int[] size_limits = new int[] {1000*1000*1000, 1000*1000, 1000, 0};
-            String[] size_limita_abbr = new String[] {"GB", "MB", "KB", "B"};
-            for (int i=0;i<size_limits.Length;i++)
+            int[] size_limits = new int[] { 1000 * 1000 * 1000, 1000 * 1000, 1000, 0 };
+            String[] size_limita_abbr = new String[] { "GB", "MB", "KB", "B" };
+            for (int i = 0; i < size_limits.Length; i++)
             {
-                if (file.Size > size_limits[i])
+                if (size > size_limits[i])
                 {
-                    double value = (size_limits[i] != 0 ? (double)file.Size / size_limits[i] : file.Size);
+                    double value = (size_limits[i] != 0 ? (double)size / size_limits[i] : size);
                     size_formatted = String.Format("{0} {1}", Math.Round(value, 2), size_limita_abbr[i]);
                     break;
                 }
             }
-            return String.Format("{0} ({1})", name, size_formatted);
+            return size_formatted;
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -168,11 +183,11 @@ namespace TorrentDownloader
             return;
         }
 
-        private void OnNewTorrentFile()
+        private void OnNewTorrentFile(String metafile_name)
         {
-            String metafile_name = dialogOpenTorrentFile.FileName;
             torrent = new Torrent(metafile_name);
             textTorrentFileName.Text = Path.GetFileName(metafile_name);
+            textTargetFileSize.Text = FormattedFileSize(torrent.Size);
             listPeers.Items.Clear();
             listPeers.Items.AddRange(torrent.PeersAddresses);
             tableTrackers.Rows.Clear();

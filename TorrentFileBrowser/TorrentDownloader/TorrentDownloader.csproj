@@ -65,31 +65,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BTProtocol\BigEndian.cs" />
-    <Compile Include="BTProtocol\BitField.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="BTProtocol\TargetFile.cs" />
     <Compile Include="FormMain.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="FormMain.Designer.cs">
       <DependentUpon>FormMain.cs</DependentUpon>
     </Compile>
-    <Compile Include="BTProtocol\Peer\PeerTcpMessages.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="BTProtocol\Peer\PeerTcpProtocol.cs" />
-    <Compile Include="BTProtocol\Torrent.cs" />
-    <Compile Include="BTProtocol\Tracker\TorrentTrackerInfo.cs" />
-    <Compile Include="BTProtocol\Tracker\TrackerHttpProtocol.cs" />
-    <Compile Include="BTProtocol\Tracker\TrackerUdpMessages.cs" />
-    <Compile Include="BTProtocol\Tracker\TrackerUdpProtocol.cs" />
-    <Compile Include="BTProtocol\UriGenerator.cs" />
     <EmbeddedResource Include="FormMain.resx">
       <DependentUpon>FormMain.cs</DependentUpon>
     </EmbeddedResource>
@@ -119,6 +108,10 @@
     <ProjectReference Include="..\..\ThreadsPool\ThreadsPool.csproj">
       <Project>{b584292c-f1b6-4ca3-afdc-47b1117a981a}</Project>
       <Name>ThreadsPool</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\BitTorrentProtocol\BitTorrentProtocol.csproj">
+      <Project>{25f866fb-9423-4159-9fcf-2bbdea05ff8d}</Project>
+      <Name>BitTorrentProtocol</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BDecoded;
 
-namespace TorrentDownloader
+namespace BitTorrentProtocol.Tracker
 {
     public class TrackerHttpProtocol
     {

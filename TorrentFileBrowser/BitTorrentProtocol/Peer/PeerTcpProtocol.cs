@@ -7,7 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TorrentDownloader
+namespace BitTorrentProtocol.Peer
 {
     public class PeerTcpProtocol
     {
