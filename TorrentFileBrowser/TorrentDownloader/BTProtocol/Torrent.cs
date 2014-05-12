@@ -11,12 +11,10 @@ namespace TorrentDownloader
 {
     public class Torrent
     {
-        public String MetaFileName { get; private set; }
         public BDecoded.BDictionary Meta { get; private set; }
         public List<TargetFile> Files;
         public Dictionary<String, TorrentTrackerInfo> Announcers { get; private set; }
         public byte[] InfoHash { get; private set; }
-        public Dictionary<String, TorrentTrackerInfo> Trackers { get; set; }
         public String[] PeersAddresses { get; set; }
         public long Size
         {
@@ -40,13 +38,22 @@ namespace TorrentDownloader
                 return 1 - (float)Bitfield.MissingPieces().Length / PiecesCount;
             }
         }
+        public int PieceLength(int index = 0)
+        {
+            String text_value = ((BDictionary)Meta["info"])["piece length"].ToString();
+            int length = Int32.Parse(text_value);
+            if ((index + 1) * length > this.Size)
+            {
+                return (int)(Size - index * length);
+            }
+            return length;
+        }
         private byte[][] pieces_hashes;
-
         private String temp_download_file
         {
             get
             {
-                String file_name = String.Format("~temp_buffer_{0}", MetaFileName.GetHashCode());
+                String file_name = String.Format("~temp_buffer_{0}", Size.GetHashCode());
                 return Path.Combine(this.DownloadDirectory, file_name);
             }
         }
@@ -54,31 +61,39 @@ namespace TorrentDownloader
         {
             get
             {
-                String file_name = String.Format("~dnld_info_{0}", MetaFileName.GetHashCode());
+                String file_name = String.Format("~dnld_info_{0}", Size.GetHashCode());
                 return Path.Combine(this.DownloadDirectory, file_name);
             }
         }
-        
-        public static int FILE_BLOCK_SIZE = 16384;
 
+        public static int FILE_BLOCK_SIZE = 16384;
 
         public Torrent(String file_name)
         {
-            this.MetaFileName = file_name;
-            IBElement parsed_torrent_file = BEncodedDecoder.DecodeStream(new FileStream(file_name, FileMode.Open));
-            if (!(parsed_torrent_file is BDictionary)) 
-                throw new FormatException("Wrong .torrent file format");
-
-            this.Meta = (BDictionary)parsed_torrent_file;
-            CollectAnnounces();
-            CollectFiles();
-            CollectHashSums(file_name);
+            ReadMetaFile(file_name);
             InitDownloadDirectory();
             this.Bitfield = new BitField(PiecesCount);
             UpdateDownloadSatus();
-            this.Trackers = new Dictionary<string, TorrentTrackerInfo>();
             this.PeersAddresses = new String[0];
             return;            
+        }
+
+
+        //
+        // Downloading
+        //
+
+        /// <summary>
+        /// Prepare to start downloading this torrent
+        /// </summary>
+        /// <returns>true if success</returns>
+        public bool PrepareForDownload()
+        {
+            if (!TouchDownloadDirectory()) return false;
+            UpdateDownloadSatus();
+            if (this.Completed == 1.0) return false;
+            PrepareDiskSpace();
+            return true;
         }
 
         /// <summary>
@@ -106,35 +121,21 @@ namespace TorrentDownloader
         }
 
         /// <summary>
-        /// Convert torrent meta info into user-friendly YML
+        /// Check if piece hashsum is correct
         /// </summary>
-        /// <returns></returns>
-        public String ToYml()
+        private bool CheckPieceHash(byte[] piece_content, int piece_index)
         {
-            BDecoded.OutputAsYml printer = new BDecoded.OutputAsYml();
-            return printer.Output(this.Meta);
-        }
-
-        public bool PrepareForDownload()
-        {
-            if (!TouchDownloadDirectory()) return false;
-            UpdateDownloadSatus();
-            if (this.Completed == 1.0) return false;
-            PrepareDiskSpace();
+            byte[] checksum = SHA1.Create().ComputeHash(piece_content);
+            for (int i = 0; i < checksum.Length; i++)
+            {
+                if (checksum[i] != pieces_hashes[piece_index][i]) return false;
+            }
             return true;
         }
-
-        public int PieceLength(int index = 0)
-        {
-            String text_value = ((BDictionary)Meta["info"])["piece length"].ToString();
-            int length = Int32.Parse(text_value);
-            if ((index + 1) * length > this.Size)
-            {
-                return (int)(Size - index * length);
-            }
-            return length;
-        }
-        
+                
+        /// <summary>
+        /// Actions after download is finished
+        /// </summary>
         public void OnDownloadFinished()
         {
             if (!File.Exists(temp_download_file)) throw new IOException();
@@ -154,136 +155,47 @@ namespace TorrentDownloader
             return;
         }
 
-        public void ChangeDownloadDirectory(String new_path)
-        {
-            DownloadDirectory = new_path;
-            TouchDownloadDirectory();
-            UpdateDownloadSatus();
-            return;
-        }
 
-        private void InitDownloadDirectory()
-        {
-            String dir_name = String.Format("download_{0}", MetaFileName.GetHashCode());
-            this.DownloadDirectory = Path.Combine(Directory.GetCurrentDirectory(), dir_name);
-        }
-
-        protected bool TouchDownloadDirectory()
-        {
-            try
-            {
-                if (!Directory.Exists(this.DownloadDirectory))
-                    Directory.CreateDirectory(this.DownloadDirectory);
-                return true;
-            }
-            catch (IOException)
-            {
-                return false;
-            }
-        }
+        //
+        // Receiving data from .torrent metafile
+        //
 
         /// <summary>
-        /// Create temporal file to contain incoming pieces
+        /// Fill itself with data from metafile
         /// </summary>
-        protected void PrepareDiskSpace()
+        /// <param name="file_name"></param>
+        private void ReadMetaFile(String file_name)
         {
-            if (!File.Exists(temp_download_file) || (new FileInfo(temp_download_file)).Length < Size)
-            {
-                using (FileStream writer = new FileStream(temp_download_file, FileMode.Create))
-                {
-                    writer.Seek(this.Size - 1, SeekOrigin.Begin);
-                    writer.WriteByte(0);
-                }
-            }
-            return;
-        }
-
-        protected void UpdateDownloadSatus()
-        {
-            if (File.Exists(info_download_file))
-            {
-                FileStream meta_file = null;
-                try
-                {
-                    meta_file = File.Open(info_download_file, FileMode.Open);
-                    byte[] data = new byte[Bitfield.Length];
-                    int read_bytes = meta_file.Read(data, 0, Bitfield.Length);
-                    Bitfield.Sum(data);
-                }
-                finally
-                {
-                    if (meta_file != null) meta_file.Close();
-                }
-            }
-            else
-            {
-                this.Bitfield = new BitField(PiecesCount);
-            }
+            IBElement parsed_torrent_file = BEncodedDecoder.DecodeStream(new FileStream(file_name, FileMode.Open));
+            if (!(parsed_torrent_file is BDictionary))
+                throw new FormatException("Wrong .torrent file format");
+            this.Meta = (BDictionary)parsed_torrent_file;
+            CollectAnnounces();
+            CollectFiles();
+            CollectHashSums(file_name);
             return;
         }
 
         /// <summary>
-        /// Take hashsum if 'info' metafile section
+        /// Collect announces info from metafile into dictionary
         /// </summary>
-        /// <param name="file_name">.torrent file name</param>
-        private void CollectHashSums(String file_name)
+        private void CollectAnnounces()
         {
-            Stream stream_reader = new FileStream(file_name, FileMode.Open);
-            byte[] content = new byte[stream_reader.Length];
-            stream_reader.Read(content, 0, content.Length);
-            stream_reader.Close();
-            // Extracting info section content
-            byte[] info_content = ExtractBDictionaryElement(content, "4:info");
-            info_content = info_content.Take(info_content.Length - 1).ToArray();
-            ExtractPiecesHashes(info_content);
-            return;            
-        }
-        private void ExtractPiecesHashes(byte[] info_content)
-        {
-            byte[] pieces_content = ExtractBDictionaryElement(info_content, "6:pieces");
-            int pieces_content_length = ((BDictionary)Meta["info"])["pieces"].ToString().Length;
-            for (int i = 0; i < pieces_content.Length; i++)
-                if (pieces_content[i] == (byte)':')
-                {
-                    pieces_content = pieces_content.Skip(i + 1).Take(pieces_content_length).ToArray();
-                    break;
-                }
-            if (pieces_content.Length != pieces_content_length || pieces_content.Length % 20 != 0) throw new FormatException("Wrong torrent file format");
-            this.pieces_hashes = new byte[PiecesCount][];
-            for (int i = 0; i < PiecesCount; i++)
+            String announce = Meta["announce"].ToString();
+            List<String> announces = new List<string>();
+            if (Meta["announce-list"] != null)
             {
-                pieces_hashes[i] = pieces_content.Skip(20 * i).Take(20).ToArray();
+                BList announces_list = (BList)Meta["announce-list"];
+                announces = announces_list.Values.Select(v => v.ToString()).ToList();
             }
-            InfoHash = SHA1.Create().ComputeHash(info_content).Reverse().ToArray();
+            this.Announcers = new Dictionary<string, TorrentTrackerInfo>();
+            foreach (String announcer in announces)
+                this.Announcers[announcer] = new TorrentTrackerInfo(this, announcer);
             return;
-        }
-        private byte[] ExtractBDictionaryElement(byte[] source, String name)
-        {
-            int start_index = FindSequenceIndex(source, Encoding.UTF8.GetBytes(name));
-            if (start_index < 0) return null;
-            return source.Skip(start_index + name.Length).ToArray();
-        }
-        private int FindSequenceIndex(byte[] source, byte[] key)
-        {
-            for (int i = 0; i < source.Length - key.Length + 1; i++)
-            {
-                if (source[i] != key[0]) continue;
-                bool matches = true;
-                for (int j = 1; j < key.Length; j++)
-                {
-                    if (source[i + j] != key[j]) 
-                    {
-                        matches = false;
-                        break; 
-                    }
-                }
-                if (matches) return i;                
-            }
-            return -1;
         }
 
         /// <summary>
-        /// Import torrent files info from bdecode structure
+        /// Extract files info from metafile
         /// </summary>
         /// <param name="info">DBecoded "info" dictionary</param>
         private void CollectFiles()
@@ -333,32 +245,146 @@ namespace TorrentDownloader
         }
 
         /// <summary>
-        /// Collect announces info from metafile into dictionary
+        /// Extract raw info data from metafile.
+        /// Necessary to avoid encoding and decoding hashsums.
         /// </summary>
-        private void CollectAnnounces()
-        {            
-            String announce = Meta["announce"].ToString();
-            List<String> announces = new List<string>();
-            if (Meta["announce-list"] != null)
+        /// <param name="file_name">.torrent file name</param>
+        private void CollectHashSums(String file_name)
+        {
+            Stream stream_reader = new FileStream(file_name, FileMode.Open);
+            byte[] content = new byte[stream_reader.Length];
+            stream_reader.Read(content, 0, content.Length);
+            stream_reader.Close();
+            // Extracting info section content
+            byte[] info_content = ExtractBDictionaryElement(content, "4:info");
+            info_content = info_content.Take(info_content.Length - 1).ToArray();
+            ExtractPiecesHashes(info_content);
+            return;
+        }
+        private void ExtractPiecesHashes(byte[] info_content)
+        {
+            byte[] pieces_content = ExtractBDictionaryElement(info_content, "6:pieces");
+            int pieces_content_length = ((BDictionary)Meta["info"])["pieces"].ToString().Length;
+            for (int i = 0; i < pieces_content.Length; i++)
+                if (pieces_content[i] == (byte)':')
+                {
+                    pieces_content = pieces_content.Skip(i + 1).Take(pieces_content_length).ToArray();
+                    break;
+                }
+            if (pieces_content.Length != pieces_content_length || pieces_content.Length % 20 != 0) throw new FormatException("Wrong torrent file format");
+            this.pieces_hashes = new byte[PiecesCount][];
+            for (int i = 0; i < PiecesCount; i++)
             {
-                BList announces_list = (BList)Meta["announce-list"];
-                announces = announces_list.Values.Select(v => v.ToString()).ToList();
+                pieces_hashes[i] = pieces_content.Skip(20 * i).Take(20).ToArray();
             }
-            this.Announcers = new Dictionary<string, TorrentTrackerInfo>();
-            foreach (String announcer in announces)
-                this.Announcers[announcer] = new TorrentTrackerInfo(this, announcer);
+            InfoHash = SHA1.Create().ComputeHash(info_content).Reverse().ToArray();
+            return;
+        }
+        private byte[] ExtractBDictionaryElement(byte[] source, String name)
+        {
+            int start_index = FindSequenceIndex(source, Encoding.UTF8.GetBytes(name));
+            if (start_index < 0) return null;
+            return source.Skip(start_index + name.Length).ToArray();
+        }
+        private int FindSequenceIndex(byte[] source, byte[] key)
+        {
+            for (int i = 0; i < source.Length - key.Length + 1; i++)
+            {
+                if (source[i] != key[0]) continue;
+                bool matches = true;
+                for (int j = 1; j < key.Length; j++)
+                {
+                    if (source[i + j] != key[j])
+                    {
+                        matches = false;
+                        break;
+                    }
+                }
+                if (matches) return i;
+            }
+            return -1;
+        }
+
+
+        /// <summary>
+        /// Set default value as destination path
+        /// </summary>
+        private void InitDownloadDirectory()
+        {
+            String dir_name = String.Format("download_{0}", Size.GetHashCode());
+            this.DownloadDirectory = Path.Combine(Directory.GetCurrentDirectory(), dir_name);
             return;
         }
 
-        private bool CheckPieceHash(byte[] piece_content, int piece_index)
+        /// <summary>
+        /// Change directory and update info
+        /// </summary>
+        public void ChangeDownloadDirectory(String new_path)
         {
-            byte[] checksum = SHA1.Create().ComputeHash(piece_content);
-            for (int i = 0; i < checksum.Length; i++)
-            {
-                if (checksum[i] != pieces_hashes[piece_index][i]) return false;
-            }
-            return true;
+            DownloadDirectory = new_path;
+            TouchDownloadDirectory();
+            UpdateDownloadSatus();
+            return;
         }
 
+        /// <summary>
+        /// Check if destination directory is ready
+        /// </summary>
+        /// <returns></returns>
+        protected bool TouchDownloadDirectory()
+        {
+            try
+            {
+                if (!Directory.Exists(this.DownloadDirectory))
+                    Directory.CreateDirectory(this.DownloadDirectory);
+                return true;
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Create temporal file to collect incoming pieces
+        /// </summary>
+        protected void PrepareDiskSpace()
+        {
+            if (!File.Exists(temp_download_file) || (new FileInfo(temp_download_file)).Length < Size)
+            {
+                using (FileStream writer = new FileStream(temp_download_file, FileMode.Create))
+                {
+                    writer.Seek(this.Size - 1, SeekOrigin.Begin);
+                    writer.WriteByte(0);
+                }
+            }
+            return;
+        }
+
+        /// <summary>
+        /// Load status file if found one
+        /// </summary>
+        protected void UpdateDownloadSatus()
+        {
+            if (File.Exists(info_download_file))
+            {
+                Bitfield.LoadFrom(info_download_file);
+            }
+            else
+            {
+                this.Bitfield = new BitField(PiecesCount);
+            }
+            return;
+        }
+        
+        /// <summary>
+        /// Convert torrent meta info into user-friendly YML
+        /// </summary>
+        /// <returns></returns>
+        public String ToYml()
+        {
+            BDecoded.OutputAsYml printer = new BDecoded.OutputAsYml();
+            return printer.Output(this.Meta);
+        }
     }
 }

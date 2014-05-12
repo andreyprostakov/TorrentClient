@@ -75,7 +75,6 @@ namespace TorrentDownloader
 
         private void ShowTorrentFileInfo()
         {
-            textTorrentFileName.Text = Path.GetFileName(torrent.MetaFileName);
             textDestinationFolder.Text = torrent.DownloadDirectory;
             checkFiles.Items.Clear();
             checkFiles.Items.AddRange(torrent.Files.Select(f => FormattedFileInfo(f)).ToArray());
@@ -171,7 +170,9 @@ namespace TorrentDownloader
 
         private void OnNewTorrentFile()
         {
-            torrent = new Torrent(dialogOpenTorrentFile.FileName);
+            String metafile_name = dialogOpenTorrentFile.FileName;
+            torrent = new Torrent(metafile_name);
+            textTorrentFileName.Text = Path.GetFileName(metafile_name);
             listPeers.Items.Clear();
             listPeers.Items.AddRange(torrent.PeersAddresses);
             tableTrackers.Rows.Clear();

@@ -7,6 +7,9 @@ using System.Web;
 
 namespace TorrentDownloader
 {
+    /// <summary>
+    /// Rough generator of HTTP GET requests
+    /// </summary>
     public class UriGenerator
     {
         public String Path { get; set; }

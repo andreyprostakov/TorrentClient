@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace TorrentDownloader
 {
+    /// <summary>
+    /// Class generally duplicates BitConverter functions using BigEndian instead of LittleEndian
+    /// </summary>
     public static class BigEndian
     {
         public static Int16 GetInt16(byte[] data, int start_index)
