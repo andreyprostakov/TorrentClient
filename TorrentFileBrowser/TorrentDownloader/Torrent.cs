@@ -25,18 +25,18 @@ namespace TorrentDownloader
                 return Files.Sum(f => f.Size);
             }
         }
-        public String DownloadDirectory = @"D:\Учеба\Курсовой проект\assets";
-        public BitField Bitfield;
-        public int PieceLength { 
-            get {
-                String text_value = ((BDictionary)Meta["info"])["piece length"].ToString();
-                return Int32.Parse(text_value);
-            } 
+        public String DownloadDirectory {
+            get
+            {
+                String dir_name = String.Format("download_{0}", MetaFileName.GetHashCode());
+                return Path.Combine(Directory.GetCurrentDirectory(), dir_name);
+            }
         }
+        public BitField Bitfield;
         public int PiecesCount
         {
             get {
-                return (int)Math.Ceiling((decimal)(this.Size / this.PieceLength + 1));
+                return (int)Math.Ceiling((double)this.Size / this.PieceLength());
             }
         }
         public float Completed
@@ -51,14 +51,16 @@ namespace TorrentDownloader
         {
             get
             {
-                return Path.Combine(this.DownloadDirectory, "temp");
+                String file_name = String.Format("~temp_buffer_{0}", MetaFileName.GetHashCode());
+                return Path.Combine(this.DownloadDirectory, file_name);
             }
         }
         private String info_download_file
         {
             get
             {
-                return Path.Combine(this.DownloadDirectory, "download.info");
+                String file_name = String.Format("~dnld_info_{0}", MetaFileName.GetHashCode());
+                return Path.Combine(this.DownloadDirectory, file_name);
             }
         }
         
@@ -77,7 +79,7 @@ namespace TorrentDownloader
             CollectFiles();
             ComputeInfoHash(file_name);
             this.Bitfield = new BitField(PiecesCount);
-            PrepareDiskSpace();
+            UpdateDownloadSatus();
             this.Trackers = new Dictionary<string, TorrentTrackerInfo>();
             this.PeersAddresses = new String[0];
             return;            
@@ -91,24 +93,20 @@ namespace TorrentDownloader
         {
             byte[] checksum = SHA1.Create().ComputeHash(piece_data);
             //byte[] true_checksum = PieceHash(index);
-            for (int i = 0; i < checksum.Length; i++)
-            {
-                //if (checksum[i] != true_checksum[i]) return false;
-            }
             try
             {
-                using (FileStream writer = new FileStream(temp_download_file, FileMode.OpenOrCreate))
+                using (FileStream writer = new FileStream(temp_download_file, FileMode.Open))
                 {
-                    long result = writer.Seek(index * (long)FILE_BLOCK_SIZE, SeekOrigin.Begin);
+                    long result = writer.Seek(index * (long)PieceLength(), SeekOrigin.Begin);
                     writer.Write(piece_data, 0, piece_data.Length);
                 }
+                Bitfield.Set(index);
+                Bitfield.SaveTo(info_download_file);
             }
-            catch (IOException)
+            catch (IOException ex)
             {
                 return false;
             }
-            Bitfield.Set(index);
-            Bitfield.SaveTo(info_download_file);
             return true;
         }
 
@@ -122,19 +120,77 @@ namespace TorrentDownloader
             return printer.Output(this.Meta);
         }
 
+        public bool PrepareForDownload()
+        {
+            if (!TouchDownloadDirectory()) return false;
+            UpdateDownloadSatus();
+            if (this.Completed == 1.0) return false;
+            PrepareDiskSpace();
+            return true;
+        }
+
+        public int PieceLength(int index = 0)
+        {
+            String text_value = ((BDictionary)Meta["info"])["piece length"].ToString();
+            int length = Int32.Parse(text_value);
+            if ((index + 1) * length > this.Size)
+            {
+                return (int)(Size - index * length);
+            }
+            return length;
+        }
+        
+        public void OnDownloadFinished()
+        {
+            if (!File.Exists(temp_download_file)) throw new IOException();
+            using (FileStream reader = new FileStream(temp_download_file, FileMode.Open))
+            {
+                for (int i = 0; i < Files.Count; i++)
+                {
+                    String target_path = Path.Combine(DownloadDirectory, Files[i].Name);
+                    FileStream writer = new FileStream(target_path, FileMode.Create);
+                    byte[] content = new byte[Files[i].Size];
+                    reader.Read(content, 0, (int)Files[i].Size);
+                    writer.Write(content, 0, (int)Files[i].Size);
+                    writer.Close();
+                }
+            }
+            File.Delete(temp_download_file);
+            return;
+        }
+        
+        protected bool TouchDownloadDirectory()
+        {
+            try
+            {
+                if (!Directory.Exists(this.DownloadDirectory))
+                    Directory.CreateDirectory(this.DownloadDirectory);
+                return true;
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+        }
+
         /// <summary>
         /// Create temporal file to contain incoming pieces
         /// </summary>
-        public bool PrepareDiskSpace()
+        protected void PrepareDiskSpace()
         {
             if (!File.Exists(temp_download_file) || (new FileInfo(temp_download_file)).Length < Size)
             {
                 using (FileStream writer = new FileStream(temp_download_file, FileMode.Create))
                 {
-                    writer.Seek(this.Size, SeekOrigin.Begin);
+                    writer.Seek(this.Size - 1, SeekOrigin.Begin);
                     writer.WriteByte(0);
                 }
             }
+            return;
+        }
+
+        protected void UpdateDownloadSatus()
+        {
             if (File.Exists(info_download_file))
             {
                 FileStream meta_file = null;
@@ -144,12 +200,17 @@ namespace TorrentDownloader
                     byte[] data = new byte[Bitfield.Length];
                     int read_bytes = meta_file.Read(data, 0, Bitfield.Length);
                     Bitfield.Sum(data);
-                } finally 
+                }
+                finally
                 {
                     if (meta_file != null) meta_file.Close();
                 }
             }
-            return true;
+            else
+            {
+                this.Bitfield = new BitField(PiecesCount);
+            }
+            return;
         }
 
         /// <summary>
@@ -250,9 +311,9 @@ namespace TorrentDownloader
         private byte[] PieceHash(int index)
         {
             String total_checksum = ((BDictionary)Meta["info"])["pieces"].ToString();
-            int start_checksum_index = index * PieceLength;
-            if (start_checksum_index + PieceLength > total_checksum.Length) throw new FormatException("Checksum error");
-            String piece_checksum = total_checksum.Substring(start_checksum_index, PieceLength);
+            int start_checksum_index = index * PieceLength();
+            if (start_checksum_index + PieceLength() > total_checksum.Length) throw new FormatException("Checksum error");
+            String piece_checksum = total_checksum.Substring(start_checksum_index, PieceLength());
             return Encoding.UTF8.GetBytes(piece_checksum);
         }
 

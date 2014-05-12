@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.NetworkInformation;
@@ -74,11 +75,18 @@ namespace TorrentDownloader
             return;
         }
 
-        public void StartDownloading(Torrent torrent)
+        public bool StartDownloading(Torrent torrent)
         {
-            Pool = new Threading.Pool(Math.Min(torrent.Announcers.Count, 7));
-            Pool.AddRoutine(DownloadingCycle, torrent);
-            return;
+            if (torrent.PrepareForDownload())
+            {
+                Pool = new Threading.Pool(Math.Min(torrent.Announcers.Count, 7));
+                Pool.AddRoutine(DownloadingCycle, torrent);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         /// <summary>

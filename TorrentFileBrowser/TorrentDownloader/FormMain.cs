@@ -17,11 +17,11 @@ namespace TorrentDownloader
 {
     public partial class FormMain : Form
     {
-        Torrent torrent;
-        Client client;
+        private Torrent torrent;
+        private Client client;
 
-        static String[] columns_headers = new String[] { "Announce", "Status", "Seeders", "Leechers", "Complete", "Incomplete", "Downloaded" };
-        static int[] columns_widths = new int[] { 150, 100, 60, 60, 60, 70, 70 };
+        static String[] TRACKERS_COLUMN_HEADERS = new String[] { "Announce", "Status", "Seeders", "Leechers", "Complete", "Incomplete", "Downloaded" };
+        static int[] TRACKERS_COLUMN_WIDTHS = new int[] { 150, 100, 60, 60, 60, 70, 70 };
 
         public FormMain()
         {
@@ -44,8 +44,20 @@ namespace TorrentDownloader
         {
             lock (torrent)
             {
-                progressDownload.Value = (int)(torrent.Completed * 100);
+                UpdateDownloadProgress();
+                if (torrent.Completed == 1.0)
+                {
+                    OnStopDownloading();
+                    torrent.OnDownloadFinished();
+                }
             }
+            return;
+        }
+
+        private void UpdateDownloadProgress()
+        {
+            int percents_progress = (int)(torrent.Completed * 100);
+            progressDownload.Value = percents_progress;
             return;
         }
 
@@ -53,16 +65,7 @@ namespace TorrentDownloader
         {
             if (dialogOpenTorrentFile.ShowDialog() == DialogResult.OK)
             {
-                torrent = new Torrent(dialogOpenTorrentFile.FileName);
-                listPeers.Items.Clear();
-                listPeers.Items.AddRange(torrent.PeersAddresses);
-                tableTrackers.Rows.Clear();
-                dialogDestinationFolder.SelectedPath = torrent.DownloadDirectory;
-                buttonChangeDestination.Enabled = true;
-                updateTrackingInfoToolStripMenuItem.Enabled = true;
-                startDownloadingToolStripMenuItem.Enabled = false;
-                stopToolStripMenuItem.Enabled = false;
-                ShowTorrentFileInfo();
+                OnNewTorrentFile();
             }
             return;
         }
@@ -101,14 +104,14 @@ namespace TorrentDownloader
 
         private void InitTrackersTable()
         {
-            int columns_count = columns_headers.Length; ;
+            int columns_count = TRACKERS_COLUMN_HEADERS.Length; ;
             tableTrackers.Rows.Clear();
             tableTrackers.ColumnCount = columns_count;
             tableTrackers.RowHeadersVisible = false;
             for (int i = 0; i < columns_count; i++)
             {
-                tableTrackers.Columns[i].HeaderText = columns_headers[i];
-                tableTrackers.Columns[i].Width = columns_widths[i];
+                tableTrackers.Columns[i].HeaderText = TRACKERS_COLUMN_HEADERS[i];
+                tableTrackers.Columns[i].Width = TRACKERS_COLUMN_WIDTHS[i];
             }
             return;
         }
@@ -116,41 +119,27 @@ namespace TorrentDownloader
         private void ShowTrackerInfo(TorrentTrackerInfo tracker_info)
         {
             int row_index = tableTrackers.Rows.Add();
-            for (int i = 0; i < columns_headers.Length; i++)
+            for (int i = 0; i < TRACKERS_COLUMN_HEADERS.Length; i++)
             {
-                tableTrackers.Rows[row_index].Cells[i].Value = tracker_info[columns_headers[i]];
+                tableTrackers.Rows[row_index].Cells[i].Value = tracker_info[TRACKERS_COLUMN_HEADERS[i]];
             }
             return;
         }
 
         private void startDownloadingToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (torrent == null) return;            
-            client.StartDownloading(torrent);
-            startDownloadingToolStripMenuItem.Enabled = false;
-            stopToolStripMenuItem.Enabled = true;
-            updateTrackingInfoToolStripMenuItem.Enabled = false;
-            timerDownloadProgress.Start();
-            openTorrentFileToolStripMenuItem.Enabled = false;
+            if (torrent == null) return;
+            if (client.StartDownloading(torrent))
+            {
+                OnStartDownloading();
+            }
             return;
         }
 
         private void updateTrackingInfoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (torrent == null) return;
-            client.CollectTorrentPeers(torrent);
-            listPeers.Items.Clear();
-            listPeers.Items.AddRange(torrent.PeersAddresses);
-            tableTrackers.Rows.Clear();
-            if (torrent.Announcers.Count > 0)
-            {
-                foreach (var tracker_info in torrent.Announcers.Values)
-                {
-                    ShowTrackerInfo(tracker_info);
-                }
-                startDownloadingToolStripMenuItem.Enabled = true;
-                stopToolStripMenuItem.Enabled = false;
-            }
+            OnUpdateTrackers();
             return;
         }
 
@@ -170,6 +159,56 @@ namespace TorrentDownloader
         }
 
         private void stopToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OnStopDownloading();
+            return;
+        }
+
+        private void OnNewTorrentFile()
+        {
+            torrent = new Torrent(dialogOpenTorrentFile.FileName);
+            listPeers.Items.Clear();
+            listPeers.Items.AddRange(torrent.PeersAddresses);
+            tableTrackers.Rows.Clear();
+            dialogDestinationFolder.SelectedPath = torrent.DownloadDirectory;
+            buttonChangeDestination.Enabled = true;
+            updateTrackingInfoToolStripMenuItem.Enabled = true;
+            startDownloadingToolStripMenuItem.Enabled = false;
+            stopToolStripMenuItem.Enabled = false;
+            ShowTorrentFileInfo();
+            UpdateDownloadProgress();
+            return;
+        }
+
+        private void OnUpdateTrackers()
+        {
+            client.CollectTorrentPeers(torrent);
+            listPeers.Items.Clear();
+            listPeers.Items.AddRange(torrent.PeersAddresses);
+            tableTrackers.Rows.Clear();
+            if (torrent.Announcers.Count > 0)
+            {
+                foreach (var tracker_info in torrent.Announcers.Values)
+                {
+                    ShowTrackerInfo(tracker_info);
+                }
+                startDownloadingToolStripMenuItem.Enabled = true;
+                stopToolStripMenuItem.Enabled = false;
+            }
+            return;
+        }
+
+        private void OnStartDownloading()
+        {
+            startDownloadingToolStripMenuItem.Enabled = false;
+            stopToolStripMenuItem.Enabled = true;
+            updateTrackingInfoToolStripMenuItem.Enabled = false;
+            timerDownloadProgress.Start();
+            openTorrentFileToolStripMenuItem.Enabled = false;
+            return;
+        }
+
+        private void OnStopDownloading()
         {
             client.Pool.AbortAll();
             stopToolStripMenuItem.Enabled = false;

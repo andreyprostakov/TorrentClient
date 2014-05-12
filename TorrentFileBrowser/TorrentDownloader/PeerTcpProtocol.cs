@@ -20,11 +20,12 @@ namespace TorrentDownloader
         private BitField peer_bitfield;
         private int current_piece_index;
         private int current_piece_offset;
-        private List<byte> current_piece;
+        private List<byte> current_piece;        
 
         public static String PROTOCOL_ID = "BitTorrent protocol";
         private static int FILE_BLOCK_SIZE = 16384;
         private static int PACKAGE_DEFAULT_SIZE = 1024;
+        private static Random random = new Random((int)DateTime.Now.Ticks);
 
         public PeerTcpProtocol(Client client)
         {
@@ -234,13 +235,12 @@ namespace TorrentDownloader
                 int[] pieces_to_download = torrent.Bitfield.RequiredPieces(peer_bitfield);
                 if (pieces_to_download.Length > 0)
                 {
-                    if (current_piece_offset == -1 || current_piece_offset > torrent.PieceLength)
+                    if (current_piece_offset == -1 || current_piece_offset > torrent.PieceLength(current_piece_index))
                     {
-                        Random rd = new Random((int)DateTime.Now.Ticks);
-                        current_piece_index = pieces_to_download[rd.Next(pieces_to_download.Length)];
+                        current_piece_index = pieces_to_download[random.Next(pieces_to_download.Length)];
                         current_piece_offset = 0;
                     }
-                    byte[] message = PeerTcpMessages.Request(current_piece_index, current_piece_offset, FILE_BLOCK_SIZE);
+                    byte[] message = PeerTcpMessages.Request(current_piece_index, current_piece_offset, BytesCountToRequest());
                     var stream = tcp_client.GetStream();
                     stream.Write(message, 0, message.Length);
                     current_piece_offset += FILE_BLOCK_SIZE;
@@ -249,17 +249,26 @@ namespace TorrentDownloader
             return;
         }
 
+        protected int BytesCountToRequest()
+        {
+            if (current_piece_offset + FILE_BLOCK_SIZE <= torrent.PieceLength(current_piece_index))
+                return FILE_BLOCK_SIZE;
+            else
+                return torrent.PieceLength(current_piece_index) - current_piece_offset;
+        }
+
         protected void SavePiece(byte[] message)
         {
             Int32 piece_index = BigEndian.GetInt32(message, 1);
             Int32 block_index = BigEndian.GetInt32(message, 5);
             byte[] data = message.Skip(9).ToArray();
             current_piece.AddRange(data);
-            if (block_index * FILE_BLOCK_SIZE + data.Length >= torrent.PieceLength)
+            if (block_index + data.Length >= torrent.PieceLength(piece_index))
             {
                 lock (torrent)
                 {
-                    torrent.SavePiece(current_piece.ToArray(), piece_index);
+                    if (torrent.Bitfield.MissingPieces().Contains(piece_index))
+                        torrent.SavePiece(current_piece.ToArray(), piece_index);
                 }
                 current_piece.Clear();
             }

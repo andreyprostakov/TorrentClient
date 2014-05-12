@@ -10,6 +10,13 @@ namespace TorrentDownloader
     {
         public long Size {get;set;}
         public String Path {get;set;}
+        public String Name
+        {
+            get
+            {
+                return System.IO.Path.GetFileName(Path);
+            }
+        }
 
         public TargetFile(String path, long size)
         {
