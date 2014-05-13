@@ -1,0 +1,7 @@
+DOS based calc for "UPDATE List" not "TUNER List"
+
+Written on front of radio ~ UPDATE List
+
+Type in the 4 digit code from the side of the radio and press ENTER.
+The code will appear below the precode.
+Press q then ENTER to quit

@@ -1,7 +1,0 @@
-D:\Учеба\Курсовой проект\nbencode\NBEncode-master\OSS.SampleApp\bin\Debug\OSS.SampleApp.exe
-D:\Учеба\Курсовой проект\nbencode\NBEncode-master\OSS.SampleApp\bin\Debug\OSS.SampleApp.pdb
-D:\Учеба\Курсовой проект\nbencode\NBEncode-master\OSS.SampleApp\bin\Debug\OSS.NBEncode.dll
-D:\Учеба\Курсовой проект\nbencode\NBEncode-master\OSS.SampleApp\bin\Debug\OSS.NBEncode.pdb
-D:\Учеба\Курсовой проект\nbencode\NBEncode-master\OSS.SampleApp\obj\x86\Debug\OSS.SampleApp.csprojResolveAssemblyReference.cache
-D:\Учеба\Курсовой проект\nbencode\NBEncode-master\OSS.SampleApp\obj\x86\Debug\OSS.SampleApp.exe
-D:\Учеба\Курсовой проект\nbencode\NBEncode-master\OSS.SampleApp\obj\x86\Debug\OSS.SampleApp.pdb

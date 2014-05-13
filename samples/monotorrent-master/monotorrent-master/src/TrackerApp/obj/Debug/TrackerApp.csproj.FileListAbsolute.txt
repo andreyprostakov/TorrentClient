@@ -1,4 +1,0 @@
-C:\Users\Andrew\Downloads\monotorrent-master\monotorrent-master\build\Tracker\Debug\TrackerApp.exe
-C:\Users\Andrew\Downloads\monotorrent-master\monotorrent-master\build\Tracker\Debug\TrackerApp.pdb
-C:\Users\Andrew\Downloads\monotorrent-master\monotorrent-master\src\TrackerApp\obj\Debug\TrackerApp.exe
-C:\Users\Andrew\Downloads\monotorrent-master\monotorrent-master\src\TrackerApp\obj\Debug\TrackerApp.pdb

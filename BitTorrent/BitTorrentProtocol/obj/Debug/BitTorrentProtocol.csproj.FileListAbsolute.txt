@@ -1,0 +1,13 @@
+D:\Учеба\Курсовой проект\TorrentFileBrowser\BitTorrentProtocol\bin\Debug\BitTorrentProtocol.dll
+D:\Учеба\Курсовой проект\TorrentFileBrowser\BitTorrentProtocol\bin\Debug\BitTorrentProtocol.pdb
+D:\Учеба\Курсовой проект\TorrentFileBrowser\BitTorrentProtocol\bin\Debug\BDecoded.dll
+D:\Учеба\Курсовой проект\TorrentFileBrowser\BitTorrentProtocol\bin\Debug\BDecoded.pdb
+D:\Учеба\Курсовой проект\TorrentFileBrowser\BitTorrentProtocol\obj\Debug\BitTorrentProtocol.dll
+D:\Учеба\Курсовой проект\TorrentFileBrowser\BitTorrentProtocol\obj\Debug\BitTorrentProtocol.pdb
+D:\Учеба\Курсовой проект\bin\BitTorrentProtocol.dll
+D:\Учеба\Курсовой проект\bin\BitTorrentProtocol.pdb
+D:\Учеба\Курсовой проект\BitTorrent\BitTorrentProtocol\obj\Debug\BitTorrentProtocol.dll
+D:\Учеба\Курсовой проект\BitTorrent\BitTorrentProtocol\obj\Debug\BitTorrentProtocol.pdb
+D:\Учеба\Курсовой проект\BitTorrent\BitTorrentProtocol\obj\Debug\BitTorrentProtocol.csprojResolveAssemblyReference.cache
+D:\Учеба\Курсовой проект\BitTorrent\bin\BitTorrentProtocol.dll
+D:\Учеба\Курсовой проект\BitTorrent\bin\BitTorrentProtocol.pdb

@@ -1,0 +1,11 @@
+D:\Учеба\Курсовой проект\BDecoded\bin\Debug\BDecoded.dll
+D:\Учеба\Курсовой проект\BDecoded\bin\Debug\BDecoded.pdb
+D:\Учеба\Курсовой проект\BDecoded\obj\Debug\BDecoded.dll
+D:\Учеба\Курсовой проект\BDecoded\obj\Debug\BDecoded.pdb
+D:\Учеба\Курсовой проект\bin\BDecoded.dll
+D:\Учеба\Курсовой проект\bin\BDecoded.pdb
+D:\Учеба\Курсовой проект\BDecoded\obj\Debug\BDecoded.csprojResolveAssemblyReference.cache
+D:\Учеба\Курсовой проект\BitTorrent\bin\BDecoded.dll
+D:\Учеба\Курсовой проект\BitTorrent\bin\BDecoded.pdb
+D:\Учеба\Курсовой проект\BitTorrent\BDecoded\obj\Debug\BDecoded.dll
+D:\Учеба\Курсовой проект\BitTorrent\BDecoded\obj\Debug\BDecoded.pdb

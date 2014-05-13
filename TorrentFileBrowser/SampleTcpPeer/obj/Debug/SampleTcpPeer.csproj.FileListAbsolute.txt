@@ -1,9 +1,0 @@
-D:\Учеба\Курсовой проект\TorrentFileBrowser\SampleTcpPeer\bin\Debug\SampleTcpPeer.exe.config
-D:\Учеба\Курсовой проект\TorrentFileBrowser\SampleTcpPeer\obj\Debug\SampleTcpPeer.csprojResolveAssemblyReference.cache
-D:\Учеба\Курсовой проект\TorrentFileBrowser\SampleTcpPeer\bin\Debug\SampleTcpPeer.exe
-D:\Учеба\Курсовой проект\TorrentFileBrowser\SampleTcpPeer\bin\Debug\SampleTcpPeer.pdb
-D:\Учеба\Курсовой проект\TorrentFileBrowser\SampleTcpPeer\obj\Debug\SampleTcpPeer.exe
-D:\Учеба\Курсовой проект\TorrentFileBrowser\SampleTcpPeer\obj\Debug\SampleTcpPeer.pdb
-D:\Учеба\Курсовой проект\bin\SampleTcpPeer.exe.config
-D:\Учеба\Курсовой проект\bin\SampleTcpPeer.exe
-D:\Учеба\Курсовой проект\bin\SampleTcpPeer.pdb

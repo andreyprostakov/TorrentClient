@@ -1,5 +1,0 @@
-C:\Users\Andrew\Downloads\monotorrent-master\monotorrent-master\build\Samples\Debug\SampleClient.exe
-C:\Users\Andrew\Downloads\monotorrent-master\monotorrent-master\build\Samples\Debug\SampleClient.pdb
-C:\Users\Andrew\Downloads\monotorrent-master\monotorrent-master\src\SampleClient\obj\Debug\SampleClient.csprojResolveAssemblyReference.cache
-C:\Users\Andrew\Downloads\monotorrent-master\monotorrent-master\src\SampleClient\obj\Debug\SampleClient.exe
-C:\Users\Andrew\Downloads\monotorrent-master\monotorrent-master\src\SampleClient\obj\Debug\SampleClient.pdb

@@ -1,0 +1,9 @@
+D:\Учеба\Курсовой проект\bin\ThreadsPool.dll
+D:\Учеба\Курсовой проект\bin\ThreadsPool.pdb
+D:\Учеба\Курсовой проект\ThreadsPool\obj\Debug\ThreadsPool.dll
+D:\Учеба\Курсовой проект\ThreadsPool\obj\Debug\ThreadsPool.pdb
+D:\Учеба\Курсовой проект\BitTorrent\bin\ThreadsPool.dll
+D:\Учеба\Курсовой проект\BitTorrent\bin\ThreadsPool.pdb
+D:\Учеба\Курсовой проект\BitTorrent\ThreadsPool\obj\Debug\ThreadsPool.csprojResolveAssemblyReference.cache
+D:\Учеба\Курсовой проект\BitTorrent\ThreadsPool\obj\Debug\ThreadsPool.dll
+D:\Учеба\Курсовой проект\BitTorrent\ThreadsPool\obj\Debug\ThreadsPool.pdb

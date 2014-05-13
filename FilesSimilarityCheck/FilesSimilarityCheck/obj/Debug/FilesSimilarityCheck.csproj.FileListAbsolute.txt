@@ -1,0 +1,8 @@
+D:\Учеба\Курсовой проект\FilesSimilarityCheck\FilesSimilarityCheck\bin\Debug\FilesSimilarityCheck.exe.config
+D:\Учеба\Курсовой проект\FilesSimilarityCheck\FilesSimilarityCheck\bin\Debug\FilesSimilarityCheck.exe
+D:\Учеба\Курсовой проект\FilesSimilarityCheck\FilesSimilarityCheck\bin\Debug\FilesSimilarityCheck.pdb
+D:\Учеба\Курсовой проект\FilesSimilarityCheck\FilesSimilarityCheck\obj\Debug\FilesSimilarityCheck.Form1.resources
+D:\Учеба\Курсовой проект\FilesSimilarityCheck\FilesSimilarityCheck\obj\Debug\FilesSimilarityCheck.Properties.Resources.resources
+D:\Учеба\Курсовой проект\FilesSimilarityCheck\FilesSimilarityCheck\obj\Debug\FilesSimilarityCheck.csproj.GenerateResource.Cache
+D:\Учеба\Курсовой проект\FilesSimilarityCheck\FilesSimilarityCheck\obj\Debug\FilesSimilarityCheck.exe
+D:\Учеба\Курсовой проект\FilesSimilarityCheck\FilesSimilarityCheck\obj\Debug\FilesSimilarityCheck.pdb
